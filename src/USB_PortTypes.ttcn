@@ -1,0 +1,125 @@
+module USB_PortTypes {
+
+	type enumerated USB_transfer_status {
+		USB_TRANSFER_COMPLETED,
+		USB_TRANSFER_ERROR,
+		USB_TRANSFER_TIMED_OUT,
+		USB_TRANSFER_CANCELLED,
+		USB_TRANSFER_STALL,
+		USB_TRANSFER_NO_DEVIC,
+		USB_TRANSFER_OVERFLOW
+	};
+
+	type integer USB_endpoint (0..255);
+	type integer USB_vendor_id (0..65535);
+	type integer USB_product_id (0..65535);
+
+	type enumerated USB_transfer_type {
+		USB_TRANSFER_TYPE_CONTROL,
+		USB_TRANSFER_TYPE_ISOCHRONOUS,
+		USB_TRANSFER_TYPE_BULK,
+		USB_TRANSFER_TYPE_INTERRUPT,
+		USB_TRANSFER_TYPE_BULK_STREAM
+	};
+
+	/* submit a USB transfer to the specified device / endpoint */
+	type record USB_transfer {
+		/* refers to a previously opened device */
+		integer device_hdl,
+		/* opaque value passed back in call-back */
+		integer transfer_hdl,
+		USB_endpoint endpoint,
+		USB_transfer_type ttype,
+		octetstring data,
+		integer timeout_msec
+	};
+	/* Response: USB_transfer_compl */
+
+	type record USB_transfer_compl {
+		/* refers to a previously opened device */
+		integer device_hdl,
+		/* opaque value passed back in call-back */
+		integer transfer_hdl,
+		USB_endpoint endpoint,
+		USB_transfer_type ttype,
+		octetstring data,
+		integer actual_length,
+		USB_transfer_status status
+	};
+
+	type record USB_result {
+		integer req_hdl,
+		integer device_hdl,
+		integer result_code
+	};
+
+	type record USB_open_vid_pid {
+		integer req_hdl,
+		integer device_hdl,
+		USB_vendor_id vendor_id,
+		USB_product_id product_id
+	};
+	/* Response: USB_result */
+
+	type record USB_set_configuration {
+		integer req_hdl,
+		integer device_hdl,
+		integer configuration
+	};
+	/* Response: USB_result */
+
+	type record USB_claim_interface {
+		integer req_hdl,
+		integer device_hdl,
+		integer interface
+	};
+	/* Response: USB_result */
+
+	type record USB_release_interface {
+		integer req_hdl,
+		integer device_hdl,
+		integer interface
+	};
+	/* Response: USB_result */
+
+	type record USB_get_device_descriptor {
+		integer req_hdl,
+		integer device_hdl
+	};
+	/* Response: USB_descriptor */
+
+	type record USB_get_config_descriptor {
+		integer req_hdl,
+		integer device_hdl,
+		integer config_index
+	};
+	/* Response: USB_descriptor */
+
+	type record USB_get_active_config_descriptor {
+		integer req_hdl,
+		integer device_hdl
+	};
+	/* Response: USB_descriptor */
+
+	type record USB_get_config_descriptor_by_value {
+		integer req_hdl,
+		integer device_hdl,
+		integer config_value
+	};
+	/* Response: USB_descriptor */
+
+	type record USB_get_string_descriptor {
+		integer req_hdl,
+		integer device_hdl,
+		integer index,
+		integer language_id
+	};
+	/* Response: USB_descriptor */
+
+	type record USB_descriptor {
+		integer req_hdl,
+		integer device_hdl,
+		integer result_code,
+		octetstring data
+	};
+};

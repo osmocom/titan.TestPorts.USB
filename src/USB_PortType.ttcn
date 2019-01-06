@@ -1,0 +1,22 @@
+module USB_PortType {
+import from USB_PortTypes all;
+
+	type port USB_PT message {
+		out USB_open_vid_pid;
+		out USB_set_configuration;
+		out USB_claim_interface;
+		out USB_release_interface;
+		in USB_result;
+
+		out USB_get_device_descriptor;
+		out USB_get_config_descriptor;
+		out USB_get_active_config_descriptor;
+		out USB_get_config_descriptor_by_value;
+		out USB_get_string_descriptor;
+		in USB_descriptor;
+
+		out USB_transfer;
+		in USB_transfer_compl;
+	} with { extension "provider" };
+
+};
