@@ -170,6 +170,11 @@ USB_Transfer::USB_Transfer(USB__PT_PROVIDER *pt, const USB__transfer& send_par)
 	xfer->timeout = send_par.timeout__msec();
 	xfer->user_data = this;
 	xfer->length = send_par.data().lengthof();
+
+	/* Control IN/read transfer */
+	if (xfer->type == LIBUSB_TRANSFER_TYPE_CONTROL && send_par.data()[0].get_octet() & 0x80) {
+		xfer->length += (send_par.data()[7].get_octet() << 8) + send_par.data()[6].get_octet();
+	}
 	xfer->buffer = libusb_dev_mem_alloc(xfer->dev_handle, xfer->length);
 	memcpy(xfer->buffer, send_par.data(), xfer->length);
 	xfer->callback = &libusb_transfer_cb;
