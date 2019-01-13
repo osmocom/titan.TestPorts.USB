@@ -1,0 +1,186 @@
+module USB_Types {
+
+/* USB Standard Descriptors as per the "Universal Serial Bus Specification Revision 2.0 */
+
+import from General_Types all;
+import from Osmocom_Types all;
+
+type hexstring HEX4LE length(4) with { variant "BYTEORDER(last)" variant "HEXORDER(high)" };
+type integer u16le_t (0..65535) with { variant "unsigned 16 bit" variant "BYTEORDER(first)" };
+
+/* Table 9-5: Descriptor Type */
+type enumerated USB_DescriptorType {
+	USB_DescriptorType_DEVICE		(1),
+	USB_DescriptorType_CONFIGURATION	(2),
+	USB_DescriptorType_STRING		(3),
+	USB_DescriptorType_INTERFACE		(4),
+	USB_DescriptorType_ENDPOINT		(5),
+	USB_DescriptorType_DEVICE_QUALIFIER	(6),
+	USB_DescriptorType_OTHER_SPEED_CONFIG	(7),
+	USB_DescriptorType_INTERFACE_POWER	(8)
+} with { variant "FIELDLENGTH(8)" };
+
+type record USB_DescriptorHeader {
+	uint8_t		bLength,
+	OCT1		bDescriptorType
+};
+
+/* Chapter 9.6.1: Device Descriptor */
+type record USB_DeviceDescriptor {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	HEX4LE		bcdUSB,
+	OCT1		bDeviceClass,
+	OCT1		bDeviceSubClass,
+	OCT1		bDeviceProtocol,
+	uint8_t		bMaxPacketSize0,
+	HEX4LE		idVendor,
+	HEX4LE		idProduct,
+	HEX4LE		bcdDevice,
+	uint8_t		iManufacturer,
+	uint8_t		iProduct,
+	uint8_t		iSerialNumber,
+	uint8_t		bNumConfigurations
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bcdUSB,bDeviceClass,bDeviceSubClass,
+				     bDeviceProtocol,bMaxPacketSize0,idVendor,idProduct,
+				     bcdDevice,iManufacturer,iProduct,iSerialNumber,bNumConfigurations)" };
+
+external function enc_USB_DeviceDescriptor(in USB_DeviceDescriptor desc) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function dec_USB_DeviceDescriptor(in octetstring stream) return USB_DeviceDescriptor
+	with { extension "prototype(convert) decode(RAW)" };
+
+/* Chapter 9.6.2: Device_Qualifier */
+type record USB_DeviceQualifierDescriptor {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	HEX4n		bcdUSB,
+	OCT1		bDeviceClass,
+	OCT1		bDeviceSubClass,
+	OCT1		bDeviceProtocol,
+	uint8_t		bMaxPacketSize0,
+	uint8_t		bNumConfigurations,
+	OCT1		bReserved
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bcdUSB,bDeviceClass,bcdUSB,bDeviceClass,
+				     bDeviceSubClass,bDeviceProtocol,bMaxPacketSize0,
+				     bNumConfigurations,bReserved)" };
+
+/* Chapter 9.6.3: Configuration Descriptor */
+type record USB_CfgAttrib {
+	BIT1		reserved1,
+	boolean		self_powered,
+	boolean		remote_wakeup,
+	BIT5		reserved0
+};
+type record USB_ConfigurationDescriptor {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	u16le_t		wTotalLength,
+	uint8_t		bNumInterfaces,
+	uint8_t		bConfigurationValue,
+	uint8_t		iConfiguration,
+	USB_CfgAttrib	bmAttributes,
+	uint8_t		bMaxPower
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,wTotalLength,bNumInterfaces,
+				     bConfigurationValue,iConfiguration,bmAttributes,bMaxPower)" };
+
+/* Chapter 9.6.4 Other_Speed_Configuration Descripotor */
+type record USB_OtherSpeedConfigurationDescriptor {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	u16le_t		wTotalLength,
+	uint8_t		bNumInterfaces,
+	uint8_t		bConfigurationValue,
+	uint8_t		iConfiguration,
+	USB_CfgAttrib	bmAttributes,
+	uint8_t		bMaxPower
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,wTotalLength,bNumInterfaces,
+				     bConfigurationValue,iConfiguration,bmAttributes,bMaxPower)" };
+
+/* Chapter 9.6.5: Interface Descriptor */
+type record USB_InterfaceDescriptor {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	uint8_t		bInterfaceNumber,
+	uint8_t		bAlternateSetting,
+	uint8_t		bNumEndpoints,
+	OCT1		bInterfaceClass,
+	OCT1		bInterfaceSubClass,
+	OCT1		bInterfaceProtocol,
+	uint8_t		iInterface
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bInterfaceNumber,bAlternateSetting,
+				     bNumEndpoints,bInterfaceClass,bInterfaceSubClass,bInterfaceProtocol,
+				     iInterface)" };
+
+/* Chapter 9.6.6: Endpoint Descriptor */
+type enumerated USB_EpUsage {
+	USB_EpUsage_DATA		(0),
+	USB_EpUsage_FEEDBACK		(1),
+	USB_EpUsage_IMPLICIT_FEEDBACK	(2),
+	USB_EpUsage_RESERVED		(3)
+} with { variant "FIELDLENGTH(2)" }
+type enumerated USB_EpSync {
+	USB_EpSync_NO			(0),
+	USB_EpSync_ASYNC		(1),
+	USB_EpSync_ADAPTIVE		(2),
+	USB_EpSync_SYNCHRONOUS		(3)
+} with { variant "FIELDLENGTH(2)" }
+type enumerated USB_EpTransfer {
+	USB_EpTransfer_CONTROL		(0),
+	USB_EpTransfer_ISOCHRONOUS	(1),
+	USB_EpTransfer_BULK		(2),
+	USB_EpTransfer_INTERRUPT	(3)
+} with { variant "FIELDLENGTH(2)" }
+type record USB_EpAttribs {
+	BIT2		RFU,
+	USB_EpUsage	UsageTyype,
+	USB_EpSync	SyncType,
+	USB_EpTransfer	TranferType
+};
+type record USB_EndpointDescriptor {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	OCT1		bEndpointAddress,
+	USB_EpAttribs	bmAttributes,
+	u16le_t		wMaxPacketSize,
+	uint8_t		bInterval
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bEndpointAddress,bmAttributes,
+				     wMaxPacketSize,bInterval)" };
+
+/* Chapter 9.6.7: String Descriptor */
+type record USB_StringDescriptor {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	octetstring	string
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,string)" };
+type record of u16le_t LangIds;
+type record USB_StringDescriptorLang {
+	uint8_t		bLength,
+	OCT1		bDescriptorType,
+	LangIds		wLANGID
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,wLANGID)" };
+
+type union USB_StandardDescriptor {
+	USB_DeviceDescriptor			device,
+	USB_DeviceQualifierDescriptor		device_qualifier,
+	USB_ConfigurationDescriptor		configuration,
+	USB_OtherSpeedConfigurationDescriptor	other_speed_config,
+	USB_InterfaceDescriptor			interface,
+	USB_EndpointDescriptor			endpoint,
+	USB_StringDescriptor			string
+} with { variant "TAG(	device, 		bDescriptorType = '01'O;
+			device_qualifier,	bDescriptorType = '06'O;
+			configuration,		bDescriptorType = '02'O;
+			other_speed_config,	bDescriptorType = '07'O;
+			interface,		bDescriptorType = '04'O;
+			endpoint,		bDescriptorType = '05'O;
+			string,			bDescriptorType = '03'O
+		)" };
+
+external function enc_USB_StandardDescriptor(in USB_StandardDescriptor desc) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function dec_USB_StandardDescriptor(in octetstring stream) return USB_StandardDescriptor
+	with { extension "prototype(convert) decode(RAW)" };
+
+
+} with { encode "RAW"; variant "FIELDORDER(msb)" };
