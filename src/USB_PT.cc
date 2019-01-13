@@ -493,6 +493,7 @@ void USB__PT_PROVIDER::transfer_completed(USB_Transfer *t)
 	xfc.endpoint() = t->mXfer->endpoint;
 	xfc.data() = OCTETSTRING(t->mXfer->length, t->mXfer->buffer);
 	xfc.actual__length() = t->mXfer->actual_length;
+	xfc.status() = t->mXfer->status;
 	incoming_message(xfc);
 }
 
