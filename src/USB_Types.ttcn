@@ -239,5 +239,12 @@ external function enc_USB_StandardDescriptor(in USB_StandardDescriptor desc) ret
 external function dec_USB_StandardDescriptor(in octetstring stream) return USB_StandardDescriptor
 	with { extension "prototype(convert) decode(RAW)" };
 
+type record of USB_StandardDescriptor USB_StandardDescriptors;
+external function enc_USB_StandardDescriptors(in USB_StandardDescriptors desc) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function dec_USB_StandardDescriptors(in octetstring stream) return USB_StandardDescriptors
+	with { extension "prototype(convert) decode(RAW)" };
+
+
 
 } with { encode "RAW"; variant "FIELDORDER(msb)" };
