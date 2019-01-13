@@ -8,7 +8,57 @@ import from Osmocom_Types all;
 type hexstring HEX4LE length(4) with { variant "BYTEORDER(last)" variant "HEXORDER(high)" };
 type integer u16le_t (0..65535) with { variant "unsigned 16 bit" variant "BYTEORDER(first)" };
 
-/* Table 9-5: Descriptor Type */
+/* Chapter 9.3 */
+type enumerated USB_RequestType_Direction {
+	Host_to_Device		(0),
+	Device_to_Host		(1)
+} with { variant "FIELDLENGTH(1)" };
+type enumerated USB_RequestType_Type {
+	RequestType_Standard	(0),
+	RequestType_Class	(1),
+	RequestType_Vendor	(2),
+	RequestType_Reserve	(3)
+} with { variant "FIELDLENGTH(2)" };
+type enumerated USB_RequestType_Recipient {
+	RequestRecipient_Device		(0),
+	RequestRecipient_Interface	(1),
+	RequestRecipient_Endpoint	(2),
+	RequestRecipient_Other		(3)
+} with { variant "FIELDLENGTH(5)" };
+type record USB_DeviceRequestType {
+	USB_RequestType_Direction	direction,
+	USB_RequestType_Type		req_type,
+	USB_RequestType_Recipient	recipient
+};
+type record USB_DeviceRequest {
+	USB_DeviceRequestType		req_type,
+	OCT1				bRequest,
+	u16le_t				wValue,
+	u16le_t				wIndex,
+	u16le_t				wLength
+};
+
+external function enc_USB_DeviceRequest(in USB_DeviceRequest desc) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function dec_USB_DeviceRequest(in octetstring stream) return USB_DeviceRequest
+	with { extension "prototype(convert) decode(RAW)" };
+
+/* Chapter 9.4, Table 9-4: Standard Request Codes */
+type enumerated USB_DeviceRequestCode {
+	USB_DevReq_GET_FEATURE			(0),
+	USB_DevReq_CLEAR_FEATURE		(1),
+	USB_DevReq_SET_FEATURE			(3),
+	USB_DevReq_SET_ADDRESS			(5),
+	USB_DevReq_GET_DESCRIPTOR		(6),
+	USB_DevReq_SET_DESCRIPTOR		(7),
+	USB_DevReq_GET_CONFIGURATION		(8),
+	USB_DevReq_SET_CONFIGURATION		(9),
+	USB_DevReq_GET_INTERFACE		(10),
+	USB_DevReq_SET_INTERFACE		(11),
+	USB_DevReq_SYNCH_FRAME			(12)
+} with { variant "FIELDLENGTH(8)" };
+
+/* Chapter 9.4, Table 9-5: Descriptor Type */
 type enumerated USB_DescriptorType {
 	USB_DescriptorType_DEVICE		(1),
 	USB_DescriptorType_CONFIGURATION	(2),
@@ -18,6 +68,13 @@ type enumerated USB_DescriptorType {
 	USB_DescriptorType_DEVICE_QUALIFIER	(6),
 	USB_DescriptorType_OTHER_SPEED_CONFIG	(7),
 	USB_DescriptorType_INTERFACE_POWER	(8)
+} with { variant "FIELDLENGTH(8)" };
+
+/* Chapter 9.4, Table 9-6: Standard Feature Selectors */
+type enumerated USB_Feature_Selector {
+	USB_Feature_DEVICE_REMOTE_WAKEUP	(1),
+	USB_Feature_ENDPOINT_HALT		(0),
+	USB_Feature_TEST_MODE			(2)
 } with { variant "FIELDLENGTH(8)" };
 
 type record USB_DescriptorHeader {
