@@ -489,6 +489,7 @@ void USB__PT_PROVIDER::transfer_completed(USB_Transfer *t)
 {
 	USB__transfer__compl xfc;
 	xfc.device__hdl() = t->mDev->mID;
+	xfc.transfer__hdl() = t->mID;
 	xfc.ttype() = ttype_usb2titan((enum libusb_transfer_type) t->mXfer->type);
 	xfc.endpoint() = t->mXfer->endpoint;
 	xfc.data() = OCTETSTRING(t->mXfer->length, t->mXfer->buffer);
