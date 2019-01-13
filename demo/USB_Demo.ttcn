@@ -1,0 +1,107 @@
+module USB_Demo {
+
+import from USB_Types all;
+import from USB_Templates all;
+import from USB_PortType all;
+import from USB_PortTypes all;
+
+type component test_CT {
+	port USB_PT	USB;
+}
+
+testcase TC_selftest() runs on test_CT {
+/*
+	const octetstring raw := '12011001FF11FF088A131700780000000101'O;
+	var USB_DeviceDescriptor ddesc := dec_USB_DeviceDescriptor(raw);
+	log("Device descriptor ", ddesc);
+
+	var USB_StandardDescriptors udesc := dec_USB_StandardDescriptors(raw);
+	log("Standard descriptor ", udesc);
+*/
+	var USB_StandardDescriptors udesc;
+	//const octetstring raw_config := '022E00010100A0320904000004FF0000000705010240000007058102400000070582024000'O;
+	const octetstring raw_config := '09022E00010100A0320904000004FF00000007050102400000070581024000000705820240000007058303080004'O;
+	udesc := dec_USB_StandardDescriptors(raw_config);
+	log("Config descriptors ", udesc);
+}
+
+
+
+/* Generate a USB_transfer for a GET_DESCRIPTOR control transfer */
+template (value) USB_transfer ts_UsbXfer_GET_DESCRIPTOR(USB_DescriptorType dtype,
+							integer idx, integer len,
+							integer device_hdl, integer xfer_hdl) := {
+	device_hdl := device_hdl,
+	transfer_hdl := xfer_hdl,
+	endpoint := 0,
+	ttype := USB_TRANSFER_TYPE_CONTROL,
+	data := enc_USB_DeviceRequest(valueof(ts_DevReq_GET_DESCRIPTOR(dtype, idx, len))),
+	timeout_msec := 1000
+}
+
+testcase TC_foobar() runs on test_CT {
+	map(self:USB, system:USB);
+
+	var USB_result res;
+	USB.send(ts_USB_open_vid_pid(hex2int('138a'H), hex2int('0017'H),
+				     device_hdl := 42, req_hdl := 23));
+	alt {
+	[] USB.receive(tr_USB_result(req_hdl := 24, device_hdl := 42)) -> value res {
+		log("Received ", res);
+		}
+	[] USB.receive {}
+	}
+
+	var USB_descriptor desc;
+	USB.send(ts_USB_get_device_descriptor(42));
+	USB.receive(tr_USB_descriptor(42, result_code := 0)) -> value desc {
+		log("Received device descriptor ", desc);
+		var USB_StandardDescriptor udesc := dec_USB_StandardDescriptor(desc.data);
+		log("Decoded device descriptor ", udesc);
+	}
+
+	USB.send(ts_USB_get_active_config_descriptor(42));
+	USB.receive(tr_USB_descriptor(42, result_code := 0)) -> value desc {
+		log("Received config descriptor ", desc);
+		var USB_StandardDescriptor udesc := dec_USB_StandardDescriptor(desc.data);
+		log("Decoded config descriptor ", udesc);
+	}
+
+/*
+	var USB_DeviceRequest gcfg := {
+		req_type := {
+			direction := Device_to_Host,
+			req_type := RequestType_Standard,
+			recipient := RequestRecipient_Device
+		},
+		bRequest := '06'O,
+		wValue := hex2int('0200'H),
+		wIndex := 0,
+		wLength := 100
+	};
+	var octetstring gcfg_enc := enc_USB_DeviceRequest(gcfg);
+	var USB_transfer xfer := {
+		device_hdl := 42,
+		transfer_hdl := 99,
+		endpoint := 0,
+		ttype := USB_TRANSFER_TYPE_CONTROL,
+		data := gcfg_enc,
+		timeout_msec := 1000
+	};
+	USB.send(xfer);
+*/
+	USB.send(ts_UsbXfer_GET_DESCRIPTOR(USB_DescriptorType_CONFIGURATION, 0, 256, 42, 99));
+	USB.receive(USB_transfer_compl:?);
+
+	var USB_claim_interface claim := {
+		req_hdl := 25,
+		device_hdl := 42,
+		interface := 0
+	};
+	USB.send(claim);
+	USB.receive(USB_result:?) -> value res { log("Received ", res); }
+}
+
+
+
+}
