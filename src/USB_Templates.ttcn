@@ -1,0 +1,136 @@
+module USB_Templates {
+
+import from USB_Types all;
+
+template (value) USB_DeviceRequest
+ts_DevReq_CLEAR_FEATURE(USB_RequestType_Recipient recipient, u16le_t wValue, u16le_t wIndex) := {
+	req_type := {
+		direction := Host_to_Device,
+		req_type := RequestType_Standard,
+		recipient := recipient
+	},
+	bRequest := '01'O,
+	wValue := wValue,
+	wIndex := wIndex,
+	wLength := 0
+}
+
+template (value) USB_DeviceRequest
+ts_DevReq_GET_CONFIGURATION := {
+	req_type := {
+		direction := Device_to_Host,
+		req_type := RequestType_Standard,
+		recipient := RequestRecipient_Device
+	},
+	bRequest := '08'O,
+	wValue := 0,
+	wIndex := 0,
+	wLength := 1
+}
+
+/* Generate a USB_DeviceRequest for a GET_DESCRIPTOR control transfer */
+template (value) USB_DeviceRequest ts_DevReq_GET_DESCRIPTOR(USB_DescriptorType dtype,
+							u16le_t idx, u16le_t len) := {
+	req_type := {
+		direction := Device_to_Host,
+		req_type := RequestType_Standard,
+		recipient := RequestRecipient_Device
+	},
+	bRequest := '06'O,
+	wValue := enum2int(dtype) * 256 + idx,
+	wIndex := 0,
+	wLength := 8 + len
+}
+
+template (value) USB_DeviceRequest ts_DevReq_GET_INTERFACE(u16le_t interface) := {
+	req_type := {
+		direction := Device_to_Host,
+		req_type := RequestType_Standard,
+		recipient := RequestRecipient_Device
+	},
+	bRequest := '0A'O,
+	wValue := 0,
+	wIndex := interface,
+	wLength := 1
+}
+
+template (value) USB_DeviceRequest
+ts_DevReq_GET_STATUS(USB_RequestType_Recipient recipient, u16le_t wIndex) := {
+	req_type := {
+		direction := Device_to_Host,
+		req_type := RequestType_Standard,
+		recipient := recipient
+	},
+	bRequest := '00'O,
+	wValue := 0,
+	wIndex := wIndex,
+	wLength := 2
+}
+
+template (value) USB_DeviceRequest
+ts_DevReq_SET_CONFIGURATION(u16le_t config) := {
+	req_type := {
+		direction := Host_to_Device,
+		req_type := RequestType_Standard,
+		recipient := RequestRecipient_Device
+	},
+	bRequest := '09'O,
+	wValue := config,
+	wIndex := 0,
+	wLength := 0
+}
+
+template (value) USB_DeviceRequest
+ts_DevReq_SET_DESCRIPTOR(USB_DescriptorType dtype, u16le_t idx, octetstring data) := {
+	req_type := {
+		direction := Host_to_Device,
+		req_type := RequestType_Standard,
+		recipient := RequestRecipient_Device
+	},
+	bRequest := '07'O,
+	wValue := enum2int(dtype) * 256 + idx,
+	wIndex := 0,
+	wLength := lengthof(data)
+}
+
+template (value) USB_DeviceRequest
+ts_DevReq_SET_FEATURE(USB_RequestType_Recipient recipient, u16le_t wValue, u16le_t wIndex) := {
+	req_type := {
+		direction := Host_to_Device,
+		req_type := RequestType_Standard,
+		recipient := recipient
+	},
+	bRequest := '03'O,
+	wValue := wValue,
+	wIndex := wIndex,
+	wLength := 0
+}
+
+
+template (value) USB_DeviceRequest
+ts_DevReq_SET_INTERFACE(u16le_t interface, u16le_t altsetting) := {
+	req_type := {
+		direction := Host_to_Device,
+		req_type := RequestType_Standard,
+		recipient := RequestRecipient_Interface
+	},
+	bRequest := '0B'O,
+	wValue := altsetting,
+	wIndex := interface,
+	wLength := 0
+}
+
+template (value) USB_DeviceRequest
+ts_DevReq_SYNCH_FRAME(u16le_t endpoint) := {
+	req_type := {
+		direction := Device_to_Host,
+		req_type := RequestType_Standard,
+		recipient := RequestRecipient_Endpoint
+	},
+	bRequest := '0C'O,
+	wValue := 0,
+	wIndex := endpoint,
+	wLength := 2
+}
+
+}
