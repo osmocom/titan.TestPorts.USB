@@ -45,7 +45,7 @@ external function dec_USB_DeviceRequest(in octetstring stream) return USB_Device
 
 /* Chapter 9.4, Table 9-4: Standard Request Codes */
 type enumerated USB_DeviceRequestCode {
-	USB_DevReq_GET_FEATURE			(0),
+	USB_DevReq_GET_STATUS			(0),
 	USB_DevReq_CLEAR_FEATURE		(1),
 	USB_DevReq_SET_FEATURE			(3),
 	USB_DevReq_SET_ADDRESS			(5),
