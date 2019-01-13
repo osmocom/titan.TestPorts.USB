@@ -190,7 +190,7 @@ type enumerated USB_EpTransfer {
 } with { variant "FIELDLENGTH(2)" }
 type record USB_EpAttribs {
 	BIT2		RFU,
-	USB_EpUsage	UsageTyype,
+	USB_EpUsage	UsageType,
 	USB_EpSync	SyncType,
 	USB_EpTransfer	TranferType
 };
