@@ -43,7 +43,6 @@ module USB_PortTypes {
 		USB_endpoint endpoint,
 		USB_transfer_type ttype,
 		octetstring data,
-		integer actual_length,
 		USB_transfer_status status
 	};
 

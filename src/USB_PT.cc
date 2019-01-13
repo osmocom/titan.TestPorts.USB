@@ -492,8 +492,10 @@ void USB__PT_PROVIDER::transfer_completed(USB_Transfer *t)
 	xfc.transfer__hdl() = t->mID;
 	xfc.ttype() = ttype_usb2titan((enum libusb_transfer_type) t->mXfer->type);
 	xfc.endpoint() = t->mXfer->endpoint;
-	xfc.data() = OCTETSTRING(t->mXfer->length, t->mXfer->buffer);
-	xfc.actual__length() = t->mXfer->actual_length;
+	unsigned int len = t->mXfer->actual_length;
+	if (t->mXfer->type == LIBUSB_TRANSFER_TYPE_CONTROL && t->mXfer->buffer[0] & 0x80)
+		len += 8;
+	xfc.data() = OCTETSTRING(len, t->mXfer->buffer);
 	xfc.status() = t->mXfer->status;
 	incoming_message(xfc);
 }
