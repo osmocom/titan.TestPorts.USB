@@ -1,0 +1,452 @@
+module CCID_Types {
+
+import from General_Types all;
+import from Osmocom_Types all;
+
+/* TTCN-3 data types with TITAN RAW codec annotations for USB CCID
+ * "Universal Serial Bus - Device Class: Smart Cad - CCID - Specification
+ *  for Integrated Circuit(s) Cards Interface Devices,
+ *  Revision 1.1, April 22nd, 2005"
+ *
+ * (C) 2018 by Harald Welte <laforge@gnumonks.org>
+ */
+
+/***********************************************************************
+ * CCID Class Descriptor, See section 5.1, Table 5.1-1
+ ***********************************************************************/
+
+type record CCID_VoltageSupport {
+	BIT5			RFU,
+	boolean			voltage_1v8,
+	boolean			voltage_3v0,
+	boolean			voltage_5v0
+};
+
+type record CCID_Protocols {
+	BIT30			RFU,
+	boolean			protocol_t1,
+	boolean			protocol_t0
+};
+
+type record CCID_SynchProtocols {
+	BIT29			RFU,
+	boolean			protocol_i2c,
+	boolean			protocol_3wire,
+	boolean			protocol_2wire
+};
+
+type record CCID_Mechanical {
+	BIT28			RFU,
+	boolean			card_lock_unlock,
+	boolean			card_capture,
+	boolean			card_ejection,
+	boolean			card_accept
+};
+
+type enumerated CCID_Level {
+	CCID_LEVEL_CHARACTER		(0),
+	CCID_LEVEL_TPDU			(1),
+	CCID_LEVEL_SHORT_APDU		(2),
+	CCID_LEVEL_SHORT_AND_EXTD_APDU	(3)
+} with { variant "FIELDLENGTH(3)" };
+
+type record CCID_Features {
+	BIT13			RFU,
+	CCID_Level		level,
+	BIT5			RFU2,
+	boolean			automatic_ifsd_t1,
+	boolean			nad_other_than_00_t1,
+	boolean			icc_clock_stop,
+	boolean			automatic_pps_active_pars,
+	boolean			automatic_params,
+	boolean			automatic_baud_active_pars,
+	boolean			automatic_clock,
+	boolean			automatic_voltage,
+	boolean			automatic_activation,
+	boolean			automatic_pars_atr,
+	BIT1			RFU3
+};
+
+type record CCID_ClassDescriptor {
+	uint8_t			bLength,
+	uint8_t			bDescriptorType,
+	HEX4n			bcdCCID,
+	uint8_t			bMaxSlotIndex,
+	CCID_VoltageSupport	bVoltageSupport,
+	CCID_Protocols		dwProtocools,
+	uint32_t		dwDefaultClock,
+	uint32_t		dwMaximumClock,
+	uint8_t			bNumClockSupported,
+	uint32_t		dwDataRate,
+	uint32_t		dwMaxDataRate,
+	uint8_t			bNumDataRatesSupported,
+	uint32_t		dwMaxIFSD,
+	CCID_Mechanical		dwMechanical,
+	CCID_Features		dwFeatures,
+	uint32_t		dwMaxCCIDMessageLength,
+	uint8_t			bClassGetResponse,
+	uint8_t			bClassEnvelope,
+	uint16_t		wLcdLayout,
+	uint8_t			bPINSupport,
+	uint8_t			bMaxCCIDBusySlots
+};
+
+
+/***********************************************************************
+ * Bulk IN
+ ***********************************************************************/
+
+/* Section 6.1.1 */
+type enumerated CCID_PowerSelect {
+	CCID_PWRSEL_AUTO		('00'H),
+	CCID_PWRSEL_5V0			('01'H),
+	CCID_PWRSEL_3V0			('02'H),
+	CCID_PWRSEL_1V8			('03'H)
+} with { variant "FIELDLENGTH(8)" };
+
+/* Section 6.1.1 */
+type record CCID_PC_to_RDR_IccPowerOn {
+	CCID_PowerSelect	bPowerSlect,
+	OCT2			abRFU
+};
+
+/* Section 6.1.2 */
+type record CCID_PC_to_RDR_IccPowerOff {
+	OCT3			abRFU
+};
+
+/* Section 6.1.3 */
+type record CCID_PC_to_RDR_GetSlotStatus {
+	OCT3			abRFU
+};
+
+/* Section 6.1.4 */
+type record CCID_PC_to_RDR_XfrBlock {
+	uint8_t			bBWI,
+	uint16_t		wLevelParameter,
+	octetstring		abData
+};
+
+/* Section 6.1.5 */
+type record CCID_PC_to_RDR_GetParameters {
+	OCT3			abRFU
+};
+
+/* Section 6.1.6 */
+type record CCID_PC_to_RDR_ResetParameters {
+	OCT3			abRFU
+};
+
+/* Section 6.1.7 */
+type enumerated CCID_ClockStop {
+	STOPPING_NOT_ALLOWED	('00'H),
+	STOP_WITH_CLK_LOW	('01'H),
+	STOP_WITH_CLK_HIGH	('02'H),
+	STOP_WITH_CLK_EITHER	('03'H)
+} with { variant "FIELDLENGTH(8)" };
+type record CCID_ProtocolData_T0 {
+	uint4_t			Findex,
+	uint4_t			Dindex,
+
+	BIT6			bRFU,
+	boolean			inv_convention,
+	BIT1			bRFU2,
+
+	uint8_t			bGuardTimeT0,
+	uint8_t			bWaitingIntegerT0,
+	CCID_ClockStop		bClockStop
+};
+type record CCID_ProtocolData_T1 {
+	uint4_t			Findex,
+	uint4_t			Dindex,
+
+	BIT6			bMagic,		/* '000100'B */
+	boolean			inv_convention,
+	boolean			csum_crc,	/* LRC otherwise */
+
+	uint8_t			bGuardTimeT1,
+
+	CCID_ClockStop		bClockStop
+};
+type union CCID_ProtocolData {
+	CCID_ProtocolData_T0	T0,
+	CCID_ProtocolData_T1	T1
+};
+type record CCID_PC_to_RDR_SetParameters {
+	OCT2			abRFU,
+	CCID_ProtocolData	abProtocolData
+};
+
+/* Section 6.1.8 */
+type record CCID_PC_to_RDR_Escape {
+	OCT3			abRFU,
+	octetstring		abData
+};
+
+/* Section 6.1.9 */
+type enumerated CCID_ClockCommand {
+	CCID_CLOCK_CMD_RESTART	('00'H),
+	CCID_CLOCK_CMD_STOP	('01'H)
+} with { variant "FIELDLENGTH(8)" };
+type record CCID_PC_to_RDR_IccClock {
+	CCID_ClockCommand	bClockCommand,
+	OCT2			abRFU
+};
+
+/* Section 6.1.10 */
+type record CCID_PC_to_RDR_T0APDU {
+	uint8_t			bmChanges,
+	uint8_t			bClassGetResponse,
+	uint8_t			bClassEnvelope
+};
+
+/* Section 6.1.11 */
+type record CCID_PC_to_RDR_Secure {
+	uint8_t			bBWI,
+	uint16_t		wLevelParameter,
+	octetstring		abData
+};
+
+/* Section 6.1.12 */
+type enumerated CCID_MechanicalFunction {
+	CCID_MECH_FN_ACCEPT_CARD	('01'H),
+	CCID_MECH_FN_EJECT_CARD		('02'H),
+	CCID_MECH_FN_CAPTURE_CARD	('03'H),
+	CCID_MECH_FN_LOCK_CARD		('04'H),
+	CCID_MECH_FN_UNLOCK_CARD	('05'H)
+} with { variant "FIELDLENGTH(8)" };
+type record CCID_PC_to_RDR_Mechanical {
+	CCID_MechanicalFunction	bFunction,
+	OCT2			abRFU
+};
+
+/* Section 6.1.13 */
+type record CCID_PC_to_RDR_Abort {
+	OCT3			abRFU
+};
+
+/* Section 6.1.14 */
+type record CCID_PC_to_RDR_SetRateAndClock {
+	OCT3			abRFU,
+	uint32_t		dwClockFrequency,
+	uint32_t		dwDataRate
+};
+
+/***********************************************************************
+ * Bulk OUT
+ ***********************************************************************/
+
+/* Section 6.2.1 */
+type record CCID_RDR_to_PC_DataBlock {
+	uint8_t			bChainParameter,
+	octetstring		abData
+};
+
+/* Section 6.2.2 */
+type enumerated CCID_ClockStatus {
+	CCID_CLOCK_STATUS_RUNNING	('00'H),
+	CCID_CLOCK_STATUS_STOPPED_L	('01'H),
+	CCID_CLOCK_STATUS_STOPPED_H	('02'H),
+	CCID_CLOCK_STATUS_STOPPED_UNKN	('03'H)
+} with { variant "FIELDLENGTH(8)" };
+type record CCID_RDR_to_PC_SlotStatus {
+	CCID_ClockStatus	bClockStatus
+};
+
+/* Section 6.2.3 */
+type record CCID_RDR_to_PC_Parameters {
+	CCID_ProtocolData	abProtocolData
+};
+
+/* Section 6.2.4 */
+type record CCID_RDR_to_PC_Escape {
+	OCT1			bRFU,
+	octetstring		abData
+};
+
+/* Section 6.2.5 */
+type record CCID_RDR_to_PC_DataRateAndClock {
+	OCT1			bRFU,
+	uint32_t		dwClockAndFrequency,
+	uint32_t		dwDataRate
+};
+
+/* Section 6.2.6 */
+// FIXME
+
+/***********************************************************************
+ * Interrupt IN
+ ***********************************************************************/
+
+/* Section 6.3.1 */
+type record CCID_RDR_to_PC_NotifySlotChange {
+	bitstring		bmSlotCCState
+};
+
+/* Section 6.3.2 */
+type record CCID_HardwareErrorCode {
+	BIT7 bRFU,
+	boolean overcurrent
+};
+type record CCID_RDR_to_PC_HardwareError {
+	CCID_HardwareErrorCode	bHardwareErrorCode
+};
+
+/***********************************************************************
+ * Stitching it together
+ ***********************************************************************/
+
+type enumerated CCID_MsgType {
+	/* Section 6.1 */
+	PC_to_RDR_IccPowerOn			('62'H),
+	PC_to_RDR_IccPowerOff			('63'H),
+	PC_to_RDR_GetSlotStatus			('65'H),
+	PC_to_RDR_XfrBlock			('6f'H),
+	PC_to_RDR_GetParameters			('6c'H),
+	PC_to_RDR_ResetParameters		('6d'H),
+	PC_to_RDR_SetParameters			('61'H),
+	PC_to_RDR_Escape			('6B'H),
+	PC_to_RDR_IccClock			('6E'H),
+	PC_to_RDR_T0APDU			('6A'H),
+	PC_to_RDR_Secure			('69'H),
+	PC_to_RDR_Mechanical			('71'H),
+	PC_to_RDR_Abort				('72'H),
+	PC_to_RDR_SetRateAndClock		('73'H),
+
+	/* Section 6.2 */
+	RDR_to_PC_DataBlock			('80'H),
+	RDR_to_PC_SlotStatus			('81'H),
+	RDR_to_PC_Parameters			('82'H),
+	RDR_to_PC_Escape			('83'H),
+	RDR_to_PC_DataRateAndClock		('84'H),
+
+	/* Section 6.3 */
+	RDR_to_PC_NotifySlotChange		('50'H),
+	RDR_to_PC_HardwareError			('51'H)
+} with { variant "FIELDLENGTH(8)" };
+
+type record CCID_Header {
+	CCID_MsgType	bMessageType,
+	uint32_t	dwLength,
+	uint8_t		bSlot,
+	uint8_t		bSeq
+};
+
+/* Table 6.2-3 Slot Status Register */
+type enumerated CCID_ICC_Status {
+	CCID_ICC_STATUS_PRES_ACT		(0),
+	CCID_ICC_STATUS_PRES_INACT		(1),
+	CCID_ICC_STATUS_NO_ICC			(2),
+	CCID_ICC_STATUS_RFU			(3)
+} with { variant "FIELDLENGTH(2)" };
+type enumerated CCID_CMD_Status {
+	CCID_CMD_STATUS_OK			(0),
+	CCID_CMD_STATUS_FAILED			(1),
+	CCID_CMD_STATUS_TIME_EXT		(2),
+	CCID_CMD_STATUS_RFU			(3)
+} with { variant "FIELDLENGTH(2)" };
+type record CCID_SlotStatus {
+	CCID_ICC_Status	bmICCStatus,
+	BIT4		RFU,
+	CCID_CMD_Status	bmCommandStatus
+};
+
+/* Table 6.2-2 Slot erro rregister when bmCommandStatus = 1 */
+type enumerated CCID_SlotError {
+	CCID_ERR_CMD_ABORTED			('FF'H),
+	CCID_ERR_ICC_MUTE			('FE'H),
+	CCID_ERR_XFR_PARITY_ERROR		('FD'H),
+	CCID_ERR_XFR_OVERRUN			('FC'H),
+	CCID_ERR_HW_ERROR			('FB'H),
+	CCID_ERR_BAD_ATR_TS			('F8'H),
+	CCID_ERR_BAD_ATR_TCK			('F7'H),
+	CCID_ERR_ICC_PROTOCOL_NOT_SUPPORTED	('F6'H),
+	CCID_ERR_ICC_CLASS_NOT_SUPPORTED	('F5'H),
+	CCID_ERR_PROCEDURE_BYTE_CONFLICT	('F4'H),
+	CCID_ERR_DEACTIVATED_PROTOCOL		('F3'H),
+	CCID_ERR_BUSY_WITH_AUTO_SEQUENCE	('F2'H),
+	CCID_ERR_PIN_TIMEOUT			('F0'H),
+	CCID_ERR_PIN_CANCELLED			('EF'H),
+	CCID_ERR_CMD_SLOT_BUSY			('E0'H),
+	CCID_ERR_CMD_NOT_SUPPORTED		('00'H)
+} with { variant "FIELDLENGTH(8)" };
+
+type record CCID_Header_IN {
+	CCID_SlotStatus			bStatus,
+	CCID_SlotError			bError
+};
+
+type union CCID_Union {
+	CCID_PC_to_RDR_IccPowerOn	IccPowerOn,
+	CCID_PC_to_RDR_IccPowerOff	IccPowerOff,
+	CCID_PC_to_RDR_GetSlotStatus	GetSlotStatus,
+	CCID_PC_to_RDR_XfrBlock		XfrBlock,
+	CCID_PC_to_RDR_GetParameters	GetParameters,
+	CCID_PC_to_RDR_ResetParameters	ResetParameters,
+	CCID_PC_to_RDR_SetParameters	SetParameters,
+	CCID_PC_to_RDR_Escape		EscapeOut,
+	CCID_PC_to_RDR_IccClock		IccClock,
+	CCID_PC_to_RDR_T0APDU		T0APDU,
+	CCID_PC_to_RDR_Secure		Secure,
+	CCID_PC_to_RDR_Mechanical	Mechanical,
+	CCID_PC_to_RDR_Abort		Abort,
+	CCID_PC_to_RDR_SetRateAndClock	SetRateAndClock,
+
+	CCID_RDR_to_PC_DataBlock	DataBlock,
+	CCID_RDR_to_PC_SlotStatus	SlotStatus,
+	CCID_RDR_to_PC_Parameters	Parameters,
+	CCID_RDR_to_PC_Escape		EscapeIn,
+	CCID_RDR_to_PC_DataRateAndClock	DataRateAndClock,
+
+	CCID_RDR_to_PC_NotifySlotChange	NotifySlotChange,
+	CCID_RDR_to_PC_HardwareError	HardwareError
+};
+
+type record CCID_PDU {
+	CCID_Header		hdr,
+	CCID_Header_IN		hdr_in optional,
+	CCID_Union		u
+} with { variant (hdr_in) "PRESENCE(hdr.bMessageType = RDR_to_PC_DataBlock,
+				    hdr.bMessageType = RDR_to_PC_SlotStatus,
+				    hdr.bMessageType = RDR_to_PC_Parameters,
+				    hdr.bMessageType = RDR_to_PC_Escape,
+				    hdr.bMessageType = RDR_to_PC_DataRateAndClock)"
+	 variant (u) "CROSSTAG(
+				IccPowerOn,		hdr.bMessageType = PC_to_RDR_IccPowerOn;
+				IccPowerOff,		hdr.bMessageType = PC_to_RDR_IccPowerOff;
+				GetSlotStatus,		hdr.bMessageType = PC_to_RDR_GetSlotStatus;
+				XfrBlock,		hdr.bMessageType = PC_to_RDR_XfrBlock;
+				GetParameters,		hdr.bMessageType = PC_to_RDR_GetParameters;
+				ResetParameters,	hdr.bMessageType = PC_to_RDR_ResetParameters;
+				SetParameters,		hdr.bMessageType = PC_to_RDR_SetParameters;
+				EscapeOut,		hdr.bMessageType = PC_to_RDR_Escape;
+				IccClock,		hdr.bMessageType = PC_to_RDR_IccClock;
+				T0APDU,			hdr.bMessageType = PC_to_RDR_T0APDU;
+				Secure,			hdr.bMessageType = PC_to_RDR_Secure;
+				Mechanical,		hdr.bMessageType = PC_to_RDR_Mechanical;
+				Abort,			hdr.bMessageType = PC_to_RDR_Abort;
+				SetRateAndClock,	hdr.bMessageType = PC_to_RDR_SetRateAndClock;
+
+				DataBlock,		hdr.bMessageType = RDR_to_PC_DataBlock;
+				SlotStatus,		hdr.bMessageType = RDR_to_PC_SlotStatus;
+				Parameters,		hdr.bMessageType = RDR_to_PC_Parameters;
+				EscapeIn,		hdr.bMessageType = RDR_to_PC_Escape;
+				DataRateAndClock,	hdr.bMessageType = RDR_to_PC_DataRateAndClock;
+
+				NotifySlotChange,	hdr.bMessageType = RDR_to_PC_NotifySlotChange;
+				HardwareError,		hdr.bMessageType = RDR_to_PC_HardwareError
+			)"
+};
+
+external function enc_CCID_PDU(in CCID_PDU pdu) return octetstring
+with { extension "prototype(convert)"
+       extension "encode(RAW)"
+     }
+
+external function dec_CCID_PDU(in octetstring stream) return CCID_PDU
+with { extension "prototype(convert)"
+       extension "decode(RAW)"
+     }
+
+
+} with { encode "RAW"; variant "FIELDORDER(msb)" }
