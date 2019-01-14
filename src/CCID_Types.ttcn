@@ -107,7 +107,7 @@ type enumerated CCID_PowerSelect {
 
 /* Section 6.1.1 */
 type record CCID_PC_to_RDR_IccPowerOn {
-	CCID_PowerSelect	bPowerSlect,
+	CCID_PowerSelect	bPowerSelect,
 	OCT2			abRFU
 };
 
