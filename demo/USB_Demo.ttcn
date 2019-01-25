@@ -9,6 +9,11 @@ type component test_CT {
 	port USB_PT	USB;
 }
 
+modulepar {
+	hexstring mp_vendor_id := '138a'H;
+	hexstring mp_product_id := '0017'H;
+}
+
 testcase TC_selftest() runs on test_CT {
 /*
 	const octetstring raw := '12011001FF11FF088A131700780000000101'O;
