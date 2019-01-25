@@ -14,6 +14,23 @@ modulepar {
 	hexstring mp_product_id := '0017'H;
 }
 
+private function f_init() runs on test_CT {
+	map(self:USB, system:USB);
+
+	var USB_result res;
+	USB.send(ts_USB_open_vid_pid(hex2int(mp_vendor_id), hex2int(mp_product_id),
+				     device_hdl := 42, req_hdl := 23));
+	alt {
+	[] USB.receive(tr_USB_result(req_hdl := 24, device_hdl := 42)) -> value res {
+		log("Received ", res);
+		}
+	[] USB.receive {
+		testcase.stop("Couldn't open requested USB device");
+		}
+	}
+}
+
+
 testcase TC_selftest() runs on test_CT {
 /*
 	const octetstring raw := '12011001FF11FF088A131700780000000101'O;
