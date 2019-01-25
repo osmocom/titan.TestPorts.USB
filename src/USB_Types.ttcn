@@ -3,9 +3,9 @@ module USB_Types {
 /* USB Standard Descriptors as per the "Universal Serial Bus Specification Revision 2.0 */
 
 import from General_Types all;
-import from Osmocom_Types all;
 
 type hexstring HEX4LE length(4) with { variant "BYTEORDER(last)" variant "HEXORDER(high)" };
+type integer uint8_t (0..255) with { variant "unsigned 8 bit" };
 type integer u16le_t (0..65535) with { variant "unsigned 16 bit" variant "BYTEORDER(first)" };
 type integer u32le_t (0..4294967295) with { variant "unsigned 32 bit" variant "BYTEORDER(first)" };
 

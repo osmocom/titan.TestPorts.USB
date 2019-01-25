@@ -1,6 +1,5 @@
 module CCID_Templates {
 
-import from Osmocom_Types all;
 import from General_Types all;
 import from USB_Types all;
 import from CCID_Types all;
