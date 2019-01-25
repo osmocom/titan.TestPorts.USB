@@ -5,7 +5,7 @@ module USB_Types {
 import from General_Types all;
 
 type hexstring HEX4LE length(4) with { variant "BYTEORDER(last)" variant "HEXORDER(high)" };
-type integer uint8_t (0..255) with { variant "unsigned 8 bit" };
+type integer u8_t (0..255) with { variant "unsigned 8 bit" };
 type integer u16le_t (0..65535) with { variant "unsigned 16 bit" variant "BYTEORDER(first)" };
 type integer u32le_t (0..4294967295) with { variant "unsigned 32 bit" variant "BYTEORDER(first)" };
 
@@ -79,26 +79,26 @@ type enumerated USB_Feature_Selector {
 } with { variant "FIELDLENGTH(8)" };
 
 type record USB_DescriptorHeader {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType
 };
 
 /* Chapter 9.6.1: Device Descriptor */
 type record USB_DeviceDescriptor {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
 	HEX4LE		bcdUSB,
 	OCT1		bDeviceClass,
 	OCT1		bDeviceSubClass,
 	OCT1		bDeviceProtocol,
-	uint8_t		bMaxPacketSize0,
+	u8_t		bMaxPacketSize0,
 	HEX4LE		idVendor,
 	HEX4LE		idProduct,
 	HEX4LE		bcdDevice,
-	uint8_t		iManufacturer,
-	uint8_t		iProduct,
-	uint8_t		iSerialNumber,
-	uint8_t		bNumConfigurations
+	u8_t		iManufacturer,
+	u8_t		iProduct,
+	u8_t		iSerialNumber,
+	u8_t		bNumConfigurations
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bcdUSB,bDeviceClass,bDeviceSubClass,
 				     bDeviceProtocol,bMaxPacketSize0,idVendor,idProduct,
 				     bcdDevice,iManufacturer,iProduct,iSerialNumber,bNumConfigurations)" };
@@ -110,14 +110,14 @@ external function dec_USB_DeviceDescriptor(in octetstring stream) return USB_Dev
 
 /* Chapter 9.6.2: Device_Qualifier */
 type record USB_DeviceQualifierDescriptor {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
 	HEX4n		bcdUSB,
 	OCT1		bDeviceClass,
 	OCT1		bDeviceSubClass,
 	OCT1		bDeviceProtocol,
-	uint8_t		bMaxPacketSize0,
-	uint8_t		bNumConfigurations,
+	u8_t		bMaxPacketSize0,
+	u8_t		bNumConfigurations,
 	OCT1		bReserved
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bcdUSB,bDeviceClass,bcdUSB,bDeviceClass,
 				     bDeviceSubClass,bDeviceProtocol,bMaxPacketSize0,
@@ -131,41 +131,41 @@ type record USB_CfgAttrib {
 	BIT5		reserved0
 };
 type record USB_ConfigurationDescriptor {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
 	u16le_t		wTotalLength,
-	uint8_t		bNumInterfaces,
-	uint8_t		bConfigurationValue,
-	uint8_t		iConfiguration,
+	u8_t		bNumInterfaces,
+	u8_t		bConfigurationValue,
+	u8_t		iConfiguration,
 	USB_CfgAttrib	bmAttributes,
-	uint8_t		bMaxPower
+	u8_t		bMaxPower
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,wTotalLength,bNumInterfaces,
 				     bConfigurationValue,iConfiguration,bmAttributes,bMaxPower)" };
 
 /* Chapter 9.6.4 Other_Speed_Configuration Descripotor */
 type record USB_OtherSpeedConfigurationDescriptor {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
 	u16le_t		wTotalLength,
-	uint8_t		bNumInterfaces,
-	uint8_t		bConfigurationValue,
-	uint8_t		iConfiguration,
+	u8_t		bNumInterfaces,
+	u8_t		bConfigurationValue,
+	u8_t		iConfiguration,
 	USB_CfgAttrib	bmAttributes,
-	uint8_t		bMaxPower
+	u8_t		bMaxPower
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,wTotalLength,bNumInterfaces,
 				     bConfigurationValue,iConfiguration,bmAttributes,bMaxPower)" };
 
 /* Chapter 9.6.5: Interface Descriptor */
 type record USB_InterfaceDescriptor {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
-	uint8_t		bInterfaceNumber,
-	uint8_t		bAlternateSetting,
-	uint8_t		bNumEndpoints,
+	u8_t		bInterfaceNumber,
+	u8_t		bAlternateSetting,
+	u8_t		bNumEndpoints,
 	OCT1		bInterfaceClass,
 	OCT1		bInterfaceSubClass,
 	OCT1		bInterfaceProtocol,
-	uint8_t		iInterface
+	u8_t		iInterface
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bInterfaceNumber,bAlternateSetting,
 				     bNumEndpoints,bInterfaceClass,bInterfaceSubClass,bInterfaceProtocol,
 				     iInterface)" };
@@ -196,24 +196,24 @@ type record USB_EpAttribs {
 	USB_EpTransfer	TranferType
 };
 type record USB_EndpointDescriptor {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
 	OCT1		bEndpointAddress,
 	USB_EpAttribs	bmAttributes,
 	u16le_t		wMaxPacketSize,
-	uint8_t		bInterval
+	u8_t		bInterval
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,bEndpointAddress,bmAttributes,
 				     wMaxPacketSize,bInterval)" };
 
 /* Chapter 9.6.7: String Descriptor */
 type record USB_StringDescriptor {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
 	octetstring	string
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,string)" };
 type record of u16le_t LangIds;
 type record USB_StringDescriptorLang {
-	uint8_t		bLength,
+	u8_t		bLength,
 	OCT1		bDescriptorType,
 	LangIds		wLANGID
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,wLANGID)" };
