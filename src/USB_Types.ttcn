@@ -218,6 +218,13 @@ type record USB_StringDescriptorLang {
 	LangIds		wLANGID
 } with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,wLANGID)" };
 
+/* any other descriptor that's not a standard descriptor */
+type record USB_OtherDescriptor {
+	u8_t		bLength,
+	OCT1		bDescriptorType,
+	octetstring	data
+} with { variant (bLength) "LENGTHTO(bLength,bDescriptorType,data)" };
+
 type union USB_StandardDescriptor {
 	USB_DeviceDescriptor			device,
 	USB_DeviceQualifierDescriptor		device_qualifier,
@@ -225,14 +232,16 @@ type union USB_StandardDescriptor {
 	USB_OtherSpeedConfigurationDescriptor	other_speed_config,
 	USB_InterfaceDescriptor			interface,
 	USB_EndpointDescriptor			endpoint,
-	USB_StringDescriptor			string
+	USB_StringDescriptor			string,
+	USB_OtherDescriptor			other
 } with { variant "TAG(	device, 		bDescriptorType = '01'O;
 			device_qualifier,	bDescriptorType = '06'O;
 			configuration,		bDescriptorType = '02'O;
 			other_speed_config,	bDescriptorType = '07'O;
 			interface,		bDescriptorType = '04'O;
 			endpoint,		bDescriptorType = '05'O;
-			string,			bDescriptorType = '03'O
+			string,			bDescriptorType = '03'O;
+			other,			OTHERWISE
 		)" };
 
 external function enc_USB_StandardDescriptor(in USB_StandardDescriptor desc) return octetstring
