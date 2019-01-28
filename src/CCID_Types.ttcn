@@ -97,6 +97,17 @@ type record CCID_ClassDescriptor {
 	uint8_t			bMaxCCIDBusySlots
 };
 
+external function enc_CCID_ClassDescriptor(in CCID_ClassDescriptor pdu) return octetstring
+with { extension "prototype(convert)"
+       extension "encode(RAW)"
+     }
+
+external function dec_CCID_ClassDescriptor(in octetstring stream) return CCID_ClassDescriptor
+with { extension "prototype(convert)"
+       extension "decode(RAW)"
+     }
+
+
 
 /***********************************************************************
  * Bulk IN
