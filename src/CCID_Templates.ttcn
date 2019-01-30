@@ -25,7 +25,7 @@ template CCID_Header tr_CCID_Header(template CCID_MsgType msgt, template uint32_
 
 
 template (value) CCID_PDU ts_CCID_IccPowerOn(uint8_t slot, CCID_PowerSelect psel, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_IccPowerOn, 10, slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_IccPowerOn, 0, slot, seq),
 	hdr_in := omit,
 	u := {
 		IccPowerOn := {
@@ -36,7 +36,7 @@ template (value) CCID_PDU ts_CCID_IccPowerOn(uint8_t slot, CCID_PowerSelect psel
 }
 
 template (value) CCID_PDU ts_CCID_IccPowerOff(uint8_t slot, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_IccPowerOff, 10, slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_IccPowerOff, 0, slot, seq),
 	hdr_in := omit,
 	u := {
 		IccPowerOff := {
@@ -46,7 +46,7 @@ template (value) CCID_PDU ts_CCID_IccPowerOff(uint8_t slot, uint8_t seq := 0) :=
 }
 
 template (value) CCID_PDU ts_CCID_GetSlotStatus(uint8_t slot, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_GetSlotStatus, 10, slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_GetSlotStatus, 0, slot, seq),
 	hdr_in := omit,
 	u := {
 		GetSlotStatus := {
@@ -56,7 +56,7 @@ template (value) CCID_PDU ts_CCID_GetSlotStatus(uint8_t slot, uint8_t seq := 0) 
 }
 
 template (value) CCID_PDU ts_CCID_XfrBlock(uint8_t slot, octetstring data, uint8_t seq := 0, uint8_t bwi, uint16_t level) := {
-	hdr := ts_CCID_Header(PC_to_RDR_XfrBlock, 10 + lengthof(data), slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_XfrBlock, lengthof(data), slot, seq),
 	hdr_in := omit,
 	u := {
 		XfrBlock := {
@@ -68,7 +68,7 @@ template (value) CCID_PDU ts_CCID_XfrBlock(uint8_t slot, octetstring data, uint8
 }
 
 template (value) CCID_PDU ts_CCID_GetParameters(uint8_t slot, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_GetParameters, 10, slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_GetParameters, 0, slot, seq),
 	hdr_in := omit,
 	u := {
 		GetParameters := {
@@ -78,7 +78,7 @@ template (value) CCID_PDU ts_CCID_GetParameters(uint8_t slot, uint8_t seq := 0) 
 }
 
 template (value) CCID_PDU ts_CCID_ResetParameters(uint8_t slot, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_ResetParameters, 10, slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_ResetParameters, 0, slot, seq),
 	hdr_in := omit,
 	u := {
 		ResetParameters := {
@@ -96,7 +96,7 @@ private function get_pdata_size(CCID_ProtocolData pd) return integer {
 }
 
 template (value) CCID_PDU ts_CCID_SetParameters(uint8_t slot, CCID_ProtocolData pd, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_ResetParameters, 10+get_pdata_size(pd), slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_ResetParameters, get_pdata_size(pd), slot, seq),
 	hdr_in := omit,
 	u := {
 		SetParameters := {
@@ -107,7 +107,7 @@ template (value) CCID_PDU ts_CCID_SetParameters(uint8_t slot, CCID_ProtocolData 
 }
 
 template (value) CCID_PDU ts_CCID_Escape(uint8_t slot, octetstring data, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_Escape, 10+lengthof(data), slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_Escape, lengthof(data), slot, seq),
 	hdr_in := omit,
 	u := {
 		EscapeOut := {
@@ -118,7 +118,7 @@ template (value) CCID_PDU ts_CCID_Escape(uint8_t slot, octetstring data, uint8_t
 }
 
 template (value) CCID_PDU ts_CCID_ClockCommand(uint8_t slot, CCID_ClockCommand cmd, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_IccClock,  10, slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_IccClock, 0, slot, seq),
 	hdr_in := omit,
 	u := {
 		IccClock := {
@@ -130,7 +130,7 @@ template (value) CCID_PDU ts_CCID_ClockCommand(uint8_t slot, CCID_ClockCommand c
 
 template (value) CCID_PDU ts_CCID_T0APDU(uint8_t slot, uint8_t changes, uint8_t get_resp,
 					 uint8_t envelope, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_T0APDU,  10, slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_T0APDU, 0, slot, seq),
 	hdr_in := omit,
 	u := {
 		T0APDU := {
@@ -143,7 +143,7 @@ template (value) CCID_PDU ts_CCID_T0APDU(uint8_t slot, uint8_t changes, uint8_t 
 
 template (value) CCID_PDU ts_CCID_Secure(uint8_t slot, uint8_t bwi, uint16_t level, octetstring data,
 					 uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_Secure, 10 + lengthof(data), slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_Secure, lengthof(data), slot, seq),
 	hdr_in := omit,
 	u := {
 		Secure := {
@@ -195,7 +195,7 @@ template CCID_PDU tr_CCID_DataBlock(template uint8_t slot := ?, template uint9_t
 
 template CCID_PDU tr_CCID_SlotStatus(template uint8_t slot := ?, template uint8_t seq := ?,
 				     template CCID_ClockStatus csts := ?) := {
-	hdr := tr_CCID_Header(RDR_to_PC_SlotStatus, 10, slot, seq),
+	hdr := tr_CCID_Header(RDR_to_PC_SlotStatus, 0, slot, seq),
 	hdr_in := ?,
 	u := {
 		SlotStatus := {
@@ -230,7 +230,7 @@ template CCID_PDU tr_CCID_EscapeIN(template uint8_t slot := ?, template uint8_t 
 template CCID_PDU tr_CCID_DataRateAndClock(template uint8_t slot := ?, template uint8_t seq := ?,
 					   template uint32_t clock_freq := ?,
 					   template uint32_t data_rate := ?) := {
-	hdr := tr_CCID_Header(RDR_to_PC_DataRateAndClock, 18, slot, seq),
+	hdr := tr_CCID_Header(RDR_to_PC_DataRateAndClock, 8, slot, seq),
 	hdr_in := ?,
 	u := {
 		DataRateAndClock := {
