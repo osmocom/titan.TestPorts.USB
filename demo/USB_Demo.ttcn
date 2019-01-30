@@ -247,15 +247,15 @@ testcase TC_foobar() runs on USB_CT {
 	f_init_usb();
 
 	var USB_descriptor desc;
-	USB.send(ts_USB_get_device_descriptor(42));
-	USB.receive(tr_USB_descriptor(42, result_code := 0)) -> value desc {
+	USB.send(ts_USB_get_device_descriptor(g_dev_hdl));
+	USB.receive(tr_USB_descriptor(g_dev_hdl, result_code := 0)) -> value desc {
 		log("Received device descriptor ", desc);
 		var USB_StandardDescriptor udesc := dec_USB_StandardDescriptor(desc.data);
 		log("Decoded device descriptor ", udesc);
 	}
 
-	USB.send(ts_USB_get_active_config_descriptor(42));
-	USB.receive(tr_USB_descriptor(42, result_code := 0)) -> value desc {
+	USB.send(ts_USB_get_active_config_descriptor(g_dev_hdl));
+	USB.receive(tr_USB_descriptor(g_dev_hdl, result_code := 0)) -> value desc {
 		log("Received config descriptor ", desc);
 		var USB_StandardDescriptor udesc := dec_USB_StandardDescriptor(desc.data);
 		log("Decoded config descriptor ", udesc);
@@ -275,7 +275,7 @@ testcase TC_foobar() runs on USB_CT {
 	};
 	var octetstring gcfg_enc := enc_USB_DeviceRequest(gcfg);
 	var USB_transfer xfer := {
-		device_hdl := 42,
+		device_hdl := g_dev_hdl,
 		transfer_hdl := 99,
 		endpoint := 0,
 		ttype := USB_TRANSFER_TYPE_CONTROL,
@@ -284,7 +284,8 @@ testcase TC_foobar() runs on USB_CT {
 	};
 	USB.send(xfer);
 */
-	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_DESCRIPTOR(USB_DescriptorType_CONFIGURATION, 0, 256), 42, 99));
+	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_DESCRIPTOR(USB_DescriptorType_CONFIGURATION, 0, 256),
+g_dev_hdl, 99));
 	USB.receive(USB_transfer_compl:?);
 
 	var USB_claim_interface claim := {
