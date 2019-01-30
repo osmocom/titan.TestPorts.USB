@@ -64,6 +64,14 @@ function f_usb_get_req_hdl() runs on USB_CT return integer
 	return i;
 }
 
+function f_usb_claim_interface(integer dev_hdl, integer bInterface)
+runs on USB_CT {
+	var USB_result res;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_USB_claim_interface(dev_hdl, bInterface, req_hdl));
+	USB.receive(USB_result:{req_hdl, dev_hdl, ?}) -> value res { log("Received ", res); }
+}
+
 /* Send a USB Device Request and wait for its completion to arrive */
 private function f_xceive_DevReq(template (value) USB_DeviceRequest req)
 runs on USB_CT return USB_transfer_compl
