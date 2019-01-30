@@ -326,12 +326,14 @@ unsigned int USB__PT_PROVIDER::usbhdl_by_dev(libusb_device_handle *dh)
 void USB__PT_PROVIDER::outgoing_send(const USB__open__vid__pid& send_par)
 {
 	unsigned int device_hdl = send_par.device__hdl();
+	unsigned int vendor_id = send_par.vendor__id();
+	unsigned int product_id = send_par.product__id();
 	int rc;
 
 	libusb_device_handle *dh;
-	dh = libusb_open_device_with_vid_pid(mCtx, send_par.vendor__id(), send_par.product__id());
+	dh = libusb_open_device_with_vid_pid(mCtx, vendor_id, product_id);
 	if (!dh) {
-		log("Error opening VID/PID %04x:%04x", send_par.vendor__id(), send_par.product__id());
+		log("Error opening VID/PID %04x:%04x", vendor_id, product_id);
 		rc = -1;
 	} else {
 		USB_Device *dev = new USB_Device(this, dh, device_hdl);
