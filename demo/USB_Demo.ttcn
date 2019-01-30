@@ -288,12 +288,7 @@ testcase TC_foobar() runs on USB_CT {
 g_dev_hdl, 99));
 	USB.receive(USB_transfer_compl:?);
 
-	var USB_claim_interface claim := {
-		req_hdl := 25,
-		device_hdl := 42,
-		interface := 0
-	};
-	USB.send(claim);
+	USB.send(ts_USB_claim_interface(g_dev_hdl, 0, 25));
 	USB.receive(USB_result:?) -> value res { log("Received ", res); }
 }
 
