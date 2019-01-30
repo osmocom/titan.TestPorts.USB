@@ -20,10 +20,11 @@ function f_init_usb() runs on USB_CT {
 	map(self:USB, system:USB);
 
 	var USB_result res;
+	var integer req_hdl := f_usb_get_req_hdl();
 	USB.send(ts_USB_open_vid_pid(hex2int(mp_vendor_id), hex2int(mp_product_id),
-				     device_hdl := g_dev_hdl, req_hdl := 23));
+				     device_hdl := g_dev_hdl, req_hdl := req_hdl));
 	alt {
-	[] USB.receive(tr_USB_result(req_hdl := 23, device_hdl := g_dev_hdl)) -> value res {
+	[] USB.receive(tr_USB_result(req_hdl := req_hdl, device_hdl := g_dev_hdl)) -> value res {
 		log("Received ", res);
 		}
 	[] USB.receive {
