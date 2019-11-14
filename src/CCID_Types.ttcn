@@ -27,7 +27,7 @@ type record CCID_Protocols {
 	BIT30			RFU,
 	boolean			protocol_t1,
 	boolean			protocol_t0
-};
+} with { variant "BYTEORDER(first)" };
 
 type record CCID_SynchProtocols {
 	BIT29			RFU,
