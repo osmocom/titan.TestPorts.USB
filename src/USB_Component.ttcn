@@ -1,0 +1,185 @@
+module USB_Component {
+
+import from General_Types all;
+
+import from USB_Types all;
+import from USB_Templates all;
+import from USB_PortType all;
+import from USB_PortTypes all;
+
+type component USB_CT {
+	port USB_PT	USB;
+	var integer 	g_dev_hdl := 42;
+	var integer	g_next_req_hdl := 13;
+}
+
+function f_usb_init_vid_pid(HEX4n vendor_id, HEX4n product_id) runs on USB_CT {
+	map(self:USB, system:USB);
+
+	var USB_result res;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_USB_open_vid_pid(hex2int(vendor_id), hex2int(product_id),
+				     device_hdl := g_dev_hdl, req_hdl := req_hdl));
+	alt {
+	[] USB.receive(tr_USB_result(req_hdl := req_hdl, device_hdl := g_dev_hdl)) -> value res {
+		log("Received ", res);
+		}
+	[] USB.receive {
+		testcase.stop("Couldn't open requested USB device");
+		}
+	}
+}
+
+
+template (value) USB_transfer ts_UsbXfer_DevReq(template (value) USB_DeviceRequest req,
+						integer device_hdl, integer xfer_hdl) := {
+	device_hdl := device_hdl,
+	transfer_hdl := xfer_hdl,
+	endpoint := 0,
+	ttype := USB_TRANSFER_TYPE_CONTROL,
+	data := enc_USB_DeviceRequest(valueof(req)),
+	timeout_msec := 1000
+}
+
+template USB_transfer_compl tr_UsbXfer_compl(template USB_endpoint ep := ?,
+					template USB_transfer_type ttype := ?,
+					template USB_transfer_status sts := ?,
+					template integer device_hdl := ?,
+					template integer xfer_hdl := ?) := {
+	device_hdl := device_hdl,
+	transfer_hdl := xfer_hdl,
+	endpoint := ep,
+	ttype := ttype,
+	data := ?,
+	status := sts
+}
+
+function f_usb_get_req_hdl() runs on USB_CT return integer
+{
+	var integer i := g_next_req_hdl;
+	g_next_req_hdl := g_next_req_hdl + 1;
+	return i;
+}
+
+function f_usb_claim_interface(integer dev_hdl, integer bInterface)
+runs on USB_CT {
+	var USB_result res;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_USB_claim_interface(dev_hdl, bInterface, req_hdl));
+	USB.receive(USB_result:{req_hdl, dev_hdl, ?}) -> value res { log("Received ", res); }
+}
+
+/* Send a USB Device Request and wait for its completion to arrive */
+function f_usb_dev_req(template (value) USB_DeviceRequest req)
+runs on USB_CT return USB_transfer_compl
+{
+	var USB_transfer_compl tc;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_UsbXfer_DevReq(req, g_dev_hdl, req_hdl));
+	alt {
+	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc { }
+	[] USB.receive {
+		testcase.stop("Received unexpected primitive from USB");
+		}
+	}
+	return tc;
+}
+
+/* Send a USB Device Request and expect it to fail with a certain transfer status */
+function f_usb_dev_req_exp_fail(template (value) USB_DeviceRequest req,
+				template USB_transfer_status sts := USB_TRANSFER_STALL)
+runs on USB_CT
+{
+	var USB_transfer_compl tc := f_usb_dev_req(req);
+	if (match(tc.status, sts)) {
+		setverdict(pass);
+	} else {
+		setverdict(fail, "Unexpected USB transfer status ", tc.status);
+	}
+}
+
+function f_usb_get_desc(USB_DescriptorType dtype, integer idx, integer len)
+runs on USB_CT return octetstring
+{
+	var USB_transfer_compl tc;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_DESCRIPTOR(dtype, idx, len), g_dev_hdl, req_hdl));
+	alt {
+	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
+		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		return raw_desc;
+		}
+	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc{
+		setverdict(fail, "Transfer completed unsuccessfully: ", tc);
+		}
+	}
+	return ''O;
+}
+
+function f_usb_get_desc_std(USB_DescriptorType dtype, integer idx, integer len)
+runs on USB_CT return USB_StandardDescriptors
+{
+	var octetstring raw := f_usb_get_desc(dtype, idx, len);
+	return dec_USB_StandardDescriptors(raw);
+}
+
+function f_usb_get_desc_exp_fail(USB_DescriptorType dtype, integer idx, integer len,
+				 template USB_transfer_status exp_status := USB_TRANSFER_STALL)
+runs on USB_CT
+{
+	f_usb_dev_req_exp_fail(ts_DevReq_GET_DESCRIPTOR(dtype, idx, len), exp_status);
+}
+
+function f_usb_get_config()
+runs on USB_CT return integer {
+	var USB_transfer_compl tc;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_CONFIGURATION, g_dev_hdl, req_hdl));
+	alt {
+	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
+		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		return oct2int(raw_desc[0]);
+		}
+	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc{
+		setverdict(fail, "Transfer completed unsuccessfully: ", tc);
+		}
+	}
+	return -1;
+};
+
+function f_usb_get_interface(integer intf)
+runs on USB_CT return integer {
+	var USB_transfer_compl tc;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_INTERFACE(intf), g_dev_hdl, req_hdl));
+	alt {
+	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
+		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		return oct2int(raw_desc[0]);
+		}
+	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc{
+		setverdict(fail, "Transfer completed unsuccessfully: ", tc);
+		}
+	}
+	return -1;
+};
+
+function f_usb_get_status(USB_RequestType_Recipient recipient, u16le_t wIndex)
+runs on USB_CT return integer
+{
+	var USB_transfer_compl tc;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_STATUS(recipient, wIndex), g_dev_hdl, req_hdl));
+	alt {
+	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
+		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		return oct2int(raw_desc);
+		}
+	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, ?, g_dev_hdl, req_hdl)) -> value tc{
+		setverdict(fail, "Transfer completed unsuccessfully: ", tc);
+		}
+	}
+	return -1;
+}
+
+}

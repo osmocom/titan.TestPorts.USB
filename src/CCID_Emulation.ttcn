@@ -1,0 +1,163 @@
+module CCID_Emulation {
+
+/* This module implements multiplexing/demultiplexing of USB CCID, enabling different
+ * TTCN-3 test components to talk to different CCID slots
+ *
+ * (C) 2019 by Harald Welte <laforge@gnumonks.org>
+ * All rights reserved.
+ */
+
+
+import from General_Types all;
+import from Osmocom_Types all;
+
+import from USB_Types all;
+import from USB_Templates all;
+import from USB_PortType all;
+import from USB_PortTypes all;
+import from USB_Component all;
+
+import from CCID_Types all;
+import from CCID_Templates all;
+
+type enumerated CCID_Emulation_Event_UpDown {
+	CCID_EVENT_UP,
+	CCID_EVENT_DOWN
+};
+
+type union CCID_Emulation_Event {
+	CCID_Emulation_Event_UpDown up_down
+};
+
+type port CCID_SLOT_PT message {
+	inout CCID_PDU, CCID_Emulation_Event;
+} with { extension "internal" }
+
+type component CCID_Emulation_CT extends USB_CT {
+	var integer g_interface;
+	var integer g_ep_in;
+	var integer g_ep_out;
+	var integer g_ep_irq;
+
+	var integer g_next_bseq := 0;
+
+	/* ports to the test components; one for each theoretically possible slot */
+	port CCID_SLOT_PT SLOT[256];
+}
+
+private const octetstring c_oct261 := '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'O;
+
+private function f_usb_submit_xfer(USB_endpoint ep, octetstring data := c_oct261,
+				   USB_transfer_type ttype := USB_TRANSFER_TYPE_BULK,
+				   integer tout_ms := 30000) runs on CCID_Emulation_CT
+{
+	var integer req_hdl := f_usb_get_req_hdl();
+	var USB_transfer xfer := {
+		device_hdl := g_dev_hdl,
+		transfer_hdl := req_hdl,
+		endpoint := ep,
+		ttype := ttype,
+		data := data,
+		timeout_msec := tout_ms
+	};
+	USB.send(xfer);
+}
+
+
+function main() runs on CCID_Emulation_CT {
+	var USB_transfer_compl tc;
+	var CCID_PDU ccid_in, ccid_out;
+	var integer i, v_i;
+
+	f_usb_init_vid_pid('1d50'H, '6141'H);
+
+	/* FIXME: get device descriptor; find CCID interface; find endpoints */
+	g_interface := 0;
+	g_ep_out := hex2int('02'H);
+	g_ep_in := hex2int('83'H);
+	g_ep_irq := hex2int('84'H);
+
+	f_usb_claim_interface(g_dev_hdl, g_interface);
+
+	/* submit xfer fro IN and IRQ endpoints */
+	f_usb_submit_xfer(g_ep_in);
+	f_usb_submit_xfer(g_ep_irq, ttype := USB_TRANSFER_TYPE_INTERRUPT);
+
+	/* let everyone know we're alive and kicking */
+	for (i := 0; i < 256; i := i+1) {
+		if (SLOT[i].checkstate("Connected")) {
+			SLOT[i].send(CCID_Emulation_Event:{up_down:=CCID_EVENT_UP});
+		}
+	}
+
+	while (true) {
+
+	alt {
+	[] USB.receive(tr_UsbXfer_compl(g_ep_out, USB_TRANSFER_TYPE_BULK, USB_TRANSFER_COMPLETED,
+					     g_dev_hdl, ?)) -> value tc {
+		/* do nothing; normal completion of OUT transfer */
+		}
+	[] USB.receive(tr_UsbXfer_compl(g_ep_in, USB_TRANSFER_TYPE_BULK, USB_TRANSFER_COMPLETED,
+					     g_dev_hdl, ?)) -> value tc {
+		/* Submit another IN transfer */
+		f_usb_submit_xfer(g_ep_in);
+		/* forward to slot-specific port */
+		ccid_in := dec_CCID_PDU(tc.data);
+		SLOT[ccid_in.hdr.bSlot].send(ccid_in);
+		}
+	[] USB.receive(tr_UsbXfer_compl(g_ep_irq, USB_TRANSFER_TYPE_INTERRUPT,
+					     USB_TRANSFER_COMPLETED, g_dev_hdl, ?)) -> value tc {
+		/* Submit another IRQ transfer */
+		f_usb_submit_xfer(g_ep_irq);
+		/* forward to all slot-specific ports with connected components */
+/*
+		ccid_in := dec_CCID_PDU(tc.data);
+		for (i := 0; i < 256; i := i+1) {
+			if (SLOT[i].checkstate("Connected")) {
+				SLOT[i].send(ccid_in);
+			}
+		}
+*/
+		}
+	[] USB.receive(tr_UsbXfer_compl(?, ?, USB_TRANSFER_ERROR, g_dev_hdl, ?)) -> value tc {
+		setverdict(fail, "Unexpected USB_TRANSFER_ERROR on EP ", int2hex(tc.endpoint, 2));
+		mtc.stop;
+		}
+	[] USB.receive(tr_UsbXfer_compl(?, ?, USB_TRANSFER_TIMED_OUT, g_dev_hdl, ?)) -> value tc {
+		setverdict(fail, "Unexpected USB_TRANSFER_TIMED_OUT on EP ", int2hex(tc.endpoint, 2));
+		mtc.stop;
+		}
+	[] USB.receive(tr_UsbXfer_compl(?, ?, USB_TRANSFER_OVERFLOW, g_dev_hdl, ?)) -> value tc {
+		setverdict(fail, "Unexpected USB_TRANSFER_OVERFLOW on EP ", int2hex(tc.endpoint, 2));
+		mtc.stop;
+		}
+	[] USB.receive(tr_UsbXfer_compl(?, ?, ?, g_dev_hdl, ?)) -> value tc {
+		setverdict(fail, "Unexpected USB Endpoint ", int2hex(tc.endpoint, 2));
+		mtc.stop;
+		}
+	[] USB.receive(tr_UsbXfer_compl(?, ?, ?, ?, ?)) -> value tc {
+		setverdict(fail, "Unexpected USB Device ", tc.device_hdl);
+		mtc.stop;
+		}
+	[] USB.receive {
+		setverdict(fail, "Unexpected Message from USB");
+		mtc.stop;
+		}
+
+	[] any from SLOT.receive(CCID_PDU:?) -> value ccid_out @index value v_i {
+		var octetstring bin;
+		ccid_out.hdr.bSlot := v_i;
+		ccid_out.hdr.bSeq := g_next_bseq;
+		g_next_bseq := (g_next_bseq + 1) mod 256;
+		bin := enc_CCID_PDU(ccid_out);
+		f_usb_submit_xfer(g_ep_out, bin, tout_ms := 3000);
+		}
+
+
+	} /* alt */
+	} /* while (true) */
+}
+
+
+
+}
