@@ -56,7 +56,7 @@ template (value) CCID_PDU ts_CCID_GetSlotStatus(uint8_t slot, uint8_t seq := 0) 
 	}
 }
 
-template (value) CCID_PDU ts_CCID_XfrBlock(uint8_t slot, octetstring data, uint8_t seq := 0, uint8_t bwi, uint16_t level) := {
+template (value) CCID_PDU ts_CCID_XfrBlock(uint8_t slot, octetstring data, uint8_t seq := 0, uint8_t bwi := 0, uint16_t level:= 0) := {
 	hdr := ts_CCID_Header(PC_to_RDR_XfrBlock, lengthof(data), slot, seq),
 	hdr_in := omit,
 	u := {
