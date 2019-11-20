@@ -119,6 +119,11 @@ function main() runs on CCID_Emulation_CT {
 		}
 */
 		}
+	[] USB.receive(tr_UsbXfer_compl(g_ep_irq, USB_TRANSFER_TYPE_INTERRUPT,
+					     USB_TRANSFER_TIMED_OUT, g_dev_hdl, ?)) -> value tc {
+		/* Submit another IRQ transfer */
+		f_usb_submit_xfer(g_ep_irq);
+		}
 	[] USB.receive(tr_UsbXfer_compl(?, ?, USB_TRANSFER_ERROR, g_dev_hdl, ?)) -> value tc {
 		setverdict(fail, "Unexpected USB_TRANSFER_ERROR on EP ", int2hex(tc.endpoint, 2));
 		mtc.stop;
