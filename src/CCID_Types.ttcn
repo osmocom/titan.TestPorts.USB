@@ -190,6 +190,7 @@ type union CCID_ProtocolData {
 	CCID_ProtocolData_T1	T1
 };
 type record CCID_PC_to_RDR_SetParameters {
+	OCT1			bProtocolNum,
 	OCT2			abRFU,
 	CCID_ProtocolData	abProtocolData
 };

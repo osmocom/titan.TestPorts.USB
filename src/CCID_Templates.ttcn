@@ -96,11 +96,20 @@ private function get_pdata_size(CCID_ProtocolData pd) return integer {
 	}
 }
 
+private function get_setparam_type(CCID_ProtocolData pd) return octetstring {
+	if (ischosen(pd.T0)) {
+		return '00'O;
+	} else {
+		return '01'O;
+	}
+}
+
 template (value) CCID_PDU ts_CCID_SetParameters(uint8_t slot, CCID_ProtocolData pd, uint8_t seq := 0) := {
-	hdr := ts_CCID_Header(PC_to_RDR_ResetParameters, get_pdata_size(pd), slot, seq),
+	hdr := ts_CCID_Header(PC_to_RDR_SetParameters, get_pdata_size(pd), slot, seq),
 	hdr_in := omit,
 	u := {
 		SetParameters := {
+			bProtocolNum := get_setparam_type(pd),
 			abRFU := '0000'O,
 			abProtocolData := pd
 		}
