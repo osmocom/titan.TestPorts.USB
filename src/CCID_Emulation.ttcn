@@ -108,7 +108,7 @@ function main() runs on CCID_Emulation_CT {
 	[] USB.receive(tr_UsbXfer_compl(g_ep_irq, USB_TRANSFER_TYPE_INTERRUPT,
 					     USB_TRANSFER_COMPLETED, g_dev_hdl, ?)) -> value tc {
 		/* Submit another IRQ transfer */
-		f_usb_submit_xfer(g_ep_irq);
+		f_usb_submit_xfer(g_ep_irq, ttype := USB_TRANSFER_TYPE_INTERRUPT);
 		/* forward to all slot-specific ports with connected components */
 /*
 		ccid_in := dec_CCID_PDU(tc.data);
@@ -122,7 +122,7 @@ function main() runs on CCID_Emulation_CT {
 	[] USB.receive(tr_UsbXfer_compl(g_ep_irq, USB_TRANSFER_TYPE_INTERRUPT,
 					     USB_TRANSFER_TIMED_OUT, g_dev_hdl, ?)) -> value tc {
 		/* Submit another IRQ transfer */
-		f_usb_submit_xfer(g_ep_irq);
+		f_usb_submit_xfer(g_ep_irq, ttype := USB_TRANSFER_TYPE_INTERRUPT);
 		}
 	[] USB.receive(tr_UsbXfer_compl(?, ?, USB_TRANSFER_ERROR, g_dev_hdl, ?)) -> value tc {
 		setverdict(fail, "Unexpected USB_TRANSFER_ERROR on EP ", int2hex(tc.endpoint, 2));
