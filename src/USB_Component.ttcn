@@ -145,6 +145,48 @@ runs on USB_CT
 	f_usb_dev_req_exp_fail(ts_DevReq_GET_DESCRIPTOR(dtype, idx, len), exp_status);
 }
 
+type record USB_Descriptor_Node {
+	USB_StandardDescriptor desc,
+	USB_Descriptor_Nodes children
+};
+
+type record of USB_Descriptor_Node USB_Descriptor_Nodes;
+
+/* Generata hierarchical tree of USB Descriptors; easier to parse for most use cases */
+function f_usb_get_desc_tree() runs on USB_CT return USB_Descriptor_Node
+{
+	var USB_Descriptor_Node device_node;
+	var USB_StandardDescriptors dev_descs;
+	var integer i, j, cur_config, cur_interface;
+
+	dev_descs := f_usb_get_desc_std(USB_DescriptorType_DEVICE, 0, 255);
+	device_node.desc := dev_descs[0];
+
+	for (i := 0; i < device_node.desc.device.bNumConfigurations; i := i+1) {
+		var USB_StandardDescriptors cfg_descs;
+		cfg_descs := f_usb_get_desc_std(USB_DescriptorType_CONFIGURATION, i, 255);
+		for (j := 0; j < lengthof(cfg_descs); j:= j+1) {
+			var USB_StandardDescriptor desc := cfg_descs[j];
+			log("Descriptor ", j, ": ", desc);
+
+			if (ischosen(desc.configuration)) {
+				cur_config := desc.configuration.bConfigurationValue;
+				cur_interface := 0;
+				device_node.children[cur_config] := { desc := desc, children := {} };
+			} else if (ischosen(desc.interface)) {
+				cur_interface := desc.interface.bInterfaceNumber;
+				device_node.children[cur_config].children[cur_interface] :=
+									{ desc := desc, children := {} };
+			} else {
+				var integer next := lengthof(device_node.children[cur_config].children[cur_interface].children);
+				device_node.children[cur_config].children[cur_interface].children[next] :=
+									{ desc := desc, children := {} };
+			}
+		}
+	}
+	return device_node;
+}
+
 function f_usb_get_config()
 runs on USB_CT return integer {
 	var USB_transfer_compl tc;
