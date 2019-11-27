@@ -33,11 +33,16 @@ type port CCID_SLOT_PT message {
 	inout CCID_PDU, CCID_Emulation_Event;
 } with { extension "internal" }
 
+type record CCID_Emulation_Params {
+	USB_Device_Match usb_dev_match
+};
+
 type component CCID_Emulation_CT extends USB_CT {
 	var integer g_interface;
 	var integer g_ep_in;
 	var integer g_ep_out;
 	var integer g_ep_irq;
+	var CCID_Emulation_Params g_pars;
 
 	var integer g_next_bseq := 0;
 
@@ -63,19 +68,57 @@ private function f_usb_submit_xfer(USB_endpoint ep, octetstring data := c_oct261
 	USB.send(xfer);
 }
 
-
-function main() runs on CCID_Emulation_CT {
+function main(CCID_Emulation_Params pars) runs on CCID_Emulation_CT {
 	var USB_transfer_compl tc;
 	var CCID_PDU ccid_in, ccid_out;
 	var integer i, v_i;
 
-	f_usb_init_vid_pid('1d50'H, '6141'H);
+	g_pars := pars;
 
-	/* FIXME: get device descriptor; find CCID interface; find endpoints */
-	g_interface := 0;
-	g_ep_out := hex2int('02'H);
-	g_ep_in := hex2int('83'H);
-	g_ep_irq := hex2int('84'H);
+	f_usb_init(g_pars.usb_dev_match);
+
+	log(f_usb_get_desc_tree());
+
+	var integer i_config := f_usb_get_config();
+	var USB_Descriptor_Node root;
+	log("USB Configuration: ", i_config);
+	root := f_usb_get_desc_tree();
+	log(root);
+
+	/* iterate over list of interfaces in current configuration */
+	for (i := 0; i < lengthof(root.children[i_config].children); i:=i+1) {
+		var USB_Descriptor_Node ifn := root.children[i_config].children[i];
+		var USB_InterfaceDescriptor ifd := ifn.desc.interface;
+		/* Search for CCID interface */
+		if (ifd.bInterfaceClass == '0B'O and
+		    ifd.bInterfaceSubClass == '00'O and ifd.bInterfaceProtocol == '00'O) {
+			g_interface := ifd.bInterfaceNumber;
+			var integer j;
+			/* determine endpoints inside interface */
+			for (j := 0; j < lengthof(ifn.children); j:=j+1) {
+				log("Iterating over ", ifn.children[j]);
+				if (ischosen(ifn.children[j].desc.endpoint)) {
+					var USB_EndpointDescriptor epd := ifn.children[j].desc.endpoint;
+					select (epd.bmAttributes.TranferType) {
+					case (USB_EpTransfer_BULK) {
+						if (epd.bEndpointAddress and4b '80'O == '80'O) {
+							g_ep_in := oct2int(epd.bEndpointAddress);
+						} else {
+							g_ep_out := oct2int(epd.bEndpointAddress);
+						}
+						}
+					case (USB_EpTransfer_INTERRUPT) {
+						g_ep_irq := oct2int(epd.bEndpointAddress);
+						}
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	log("USB Endpoints found: IN: ", int2oct(g_ep_in, 1), ", OUT: ", int2oct(g_ep_out, 1),
+		" IRQ: ", int2oct(g_ep_irq, 1));
 
 	f_usb_claim_interface(g_dev_hdl, g_interface);
 
