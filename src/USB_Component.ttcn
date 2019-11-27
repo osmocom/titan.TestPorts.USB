@@ -13,6 +13,14 @@ type component USB_CT {
 	var integer	g_next_req_hdl := 13;
 }
 
+type record USB_Device_Match_vidpid {
+	HEX4n vid,
+	HEX4n pid
+};
+type union USB_Device_Match {
+	USB_Device_Match_vidpid vid_pid
+};
+
 function f_usb_init_vid_pid(HEX4n vendor_id, HEX4n product_id) runs on USB_CT {
 	map(self:USB, system:USB);
 
@@ -30,6 +38,13 @@ function f_usb_init_vid_pid(HEX4n vendor_id, HEX4n product_id) runs on USB_CT {
 	}
 }
 
+function f_usb_init(USB_Device_Match udm) runs on USB_CT {
+	if (ischosen(udm.vid_pid)) {
+		f_usb_init_vid_pid(udm.vid_pid.vid, udm.vid_pid.pid);
+	} else {
+		testcase.stop("Unsupported USB_Device_Match");
+	}
+}
 
 template (value) USB_transfer ts_UsbXfer_DevReq(template (value) USB_DeviceRequest req,
 						integer device_hdl, integer xfer_hdl) := {
