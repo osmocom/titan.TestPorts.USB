@@ -193,6 +193,8 @@ type record CCID_PC_to_RDR_SetParameters {
 	OCT1			bProtocolNum,
 	OCT2			abRFU,
 	CCID_ProtocolData	abProtocolData
+} with { variant (abProtocolData) "CROSSTAG(T0, bProtocolNum = '00'O;
+					    T1, bProtocolNum = '01'O)"
 };
 
 /* Section 6.1.8 */
@@ -273,7 +275,10 @@ type record CCID_RDR_to_PC_SlotStatus {
 
 /* Section 6.2.3 */
 type record CCID_RDR_to_PC_Parameters {
+	OCT1			bProtocolNum,
 	CCID_ProtocolData	abProtocolData
+} with { variant (abProtocolData) "CROSSTAG(T0, bProtocolNum = '00'O;
+					    T1, bProtocolNum = '01'O)"
 };
 
 /* Section 6.2.4 */
