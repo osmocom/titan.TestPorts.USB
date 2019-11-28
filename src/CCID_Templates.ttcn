@@ -249,6 +249,7 @@ template (present) CCID_PDU tr_CCID_Parameters(template (present) uint8_t slot :
 	hdr_in := hdr_in,
 	u := {
 		Parameters := {
+			bProtocolNum := ?,
 			abProtocolData := pd
 		}
 	}
