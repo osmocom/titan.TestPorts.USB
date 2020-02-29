@@ -94,6 +94,7 @@ protected:
 	void user_stop();
 
 	void outgoing_send(const USB__open__vid__pid& send_par);
+	void outgoing_send(const USB__open__path& send_par);
 	void outgoing_send(const USB__transfer& send_par);
 	void outgoing_send(const USB__set__configuration& send_par);
 	void outgoing_send(const USB__claim__interface& send_par);

@@ -18,8 +18,12 @@ type record USB_Device_Match_vidpid {
 	HEX4n vid,
 	HEX4n pid
 };
+type record USB_Device_Match_path {
+	charstring path
+};
 type union USB_Device_Match {
-	USB_Device_Match_vidpid vid_pid
+	USB_Device_Match_vidpid vid_pid,
+	USB_Device_Match_path path
 };
 
 function f_usb_init_vid_pid(HEX4n vendor_id, HEX4n product_id) runs on USB_CT {
@@ -41,10 +45,35 @@ function f_usb_init_vid_pid(HEX4n vendor_id, HEX4n product_id) runs on USB_CT {
 	g_USB_Tguard.stop;
 }
 
+function f_usb_init_path(charstring path) runs on USB_CT {
+	map(self:USB, system:USB);
+	var USB_result res;
+	var integer req_hdl := f_usb_get_req_hdl();
+	USB.send(ts_USB_open_path(path, device_hdl := g_dev_hdl, req_hdl := req_hdl));
+	g_USB_Tguard.start;
+	alt {
+	[] USB.receive(tr_USB_result(req_hdl := req_hdl, device_hdl := g_dev_hdl)) -> value res {
+		log("Received ", res);
+		}
+	[] USB.receive {
+		testcase.stop("Couldn't open requested USB device");
+		}
+	}
+	g_USB_Tguard.stop;
+}
+
+private altstep as_Tguard() runs on USB_CT {
+[] g_USB_Tguard.timeout {
+	testcase.stop("Timeout of global USB guard timer");
+	}
+}
+
 function f_usb_init(USB_Device_Match udm) runs on USB_CT {
 	activate(as_Tguard());
 	if (ischosen(udm.vid_pid)) {
 		f_usb_init_vid_pid(udm.vid_pid.vid, udm.vid_pid.pid);
+	} else if (ischosen(udm.path)) {
+		f_usb_init_path(udm.path.path);
 	} else {
 		testcase.stop("Unsupported USB_Device_Match");
 	}

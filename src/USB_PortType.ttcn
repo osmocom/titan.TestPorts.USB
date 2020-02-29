@@ -3,6 +3,7 @@ import from USB_PortTypes all;
 
 	type port USB_PT message {
 		out USB_open_vid_pid;
+		out USB_open_path;
 		out USB_set_configuration;
 		out USB_claim_interface;
 		out USB_release_interface;

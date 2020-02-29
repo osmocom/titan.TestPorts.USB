@@ -343,6 +343,67 @@ void USB__PT_PROVIDER::outgoing_send(const USB__open__vid__pid& send_par)
 	incoming_message(USB__result(send_par.req__hdl(), send_par.device__hdl(), rc));
 }
 
+static void stringify_usb_path(char *out, uint8_t bus_num, const uint8_t *ports, size_t num_ports)
+{
+	int length = 0;
+	int i;
+
+	length += sprintf(out, "%u-%u", bus_num, ports[0]);
+	for (i = 1; i < num_ports; i++)
+		length += sprintf(out+length, ".%u", ports[i]);
+}
+
+void USB__PT_PROVIDER::outgoing_send(const USB__open__path& send_par)
+{
+	unsigned int device_hdl = send_par.device__hdl();
+	const CHARSTRING &in_path_char = send_par.path();
+	const char *in_path = (const char *) in_path_char;
+	libusb_device_handle *dh = NULL;
+	libusb_device **list;
+	int rc, i;
+
+	rc = libusb_get_device_list(mCtx, &list);
+	if (rc < 0) {
+		log("Error getting USB device list: %s\n",
+		    libusb_strerror((enum libusb_error) rc));
+		rc = -1;
+		goto out;
+	}
+
+	for (i = 0; list[i] != NULL; i++) {
+		uint8_t ports[8];
+		char path[256];
+		libusb_device *dev = list[i];
+		rc = libusb_get_port_numbers(dev, ports, sizeof(ports));
+		stringify_usb_path(path, libusb_get_bus_number(dev), ports, rc);
+		log("Found USB Device at path %s", path);
+		if (!strcmp(in_path, path)) {
+			rc = libusb_open(dev, &dh);
+			if (rc < 0) {
+				log("Error opening USB device %s: %s", path,
+				    libusb_strerror((enum libusb_error) rc));
+				rc = -1;
+			} else {
+				USB_Device *udev = new USB_Device(this, dh, device_hdl);
+				mDevices.insert(std::make_pair(device_hdl, udev));
+				log("Successfully opened USB device at path %s", path);
+				rc = 0;
+			}
+			break;
+		}
+	}
+
+	if (!dh) {
+		log("No matching USB device for %s", in_path);
+		rc = -1;
+	}
+	libusb_free_device_list(list, 1);
+
+out:
+	incoming_message(USB__result(send_par.req__hdl(), send_par.device__hdl(), rc));
+}
+
+
 void USB__PT_PROVIDER::outgoing_send(const USB__set__configuration& send_par)
 {
 	USB_Device *dev = usbdev_by_hdl(send_par.device__hdl());
