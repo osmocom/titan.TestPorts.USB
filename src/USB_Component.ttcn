@@ -11,6 +11,7 @@ type component USB_CT {
 	port USB_PT	USB;
 	var integer 	g_dev_hdl := 42;
 	var integer	g_next_req_hdl := 13;
+	timer		g_USB_Tguard := 5.0;
 }
 
 type record USB_Device_Match_vidpid {
@@ -28,6 +29,7 @@ function f_usb_init_vid_pid(HEX4n vendor_id, HEX4n product_id) runs on USB_CT {
 	var integer req_hdl := f_usb_get_req_hdl();
 	USB.send(ts_USB_open_vid_pid(hex2int(vendor_id), hex2int(product_id),
 				     device_hdl := g_dev_hdl, req_hdl := req_hdl));
+	g_USB_Tguard.start;
 	alt {
 	[] USB.receive(tr_USB_result(req_hdl := req_hdl, device_hdl := g_dev_hdl)) -> value res {
 		log("Received ", res);
@@ -36,9 +38,11 @@ function f_usb_init_vid_pid(HEX4n vendor_id, HEX4n product_id) runs on USB_CT {
 		testcase.stop("Couldn't open requested USB device");
 		}
 	}
+	g_USB_Tguard.stop;
 }
 
 function f_usb_init(USB_Device_Match udm) runs on USB_CT {
+	activate(as_Tguard());
 	if (ischosen(udm.vid_pid)) {
 		f_usb_init_vid_pid(udm.vid_pid.vid, udm.vid_pid.pid);
 	} else {
@@ -80,8 +84,10 @@ function f_usb_claim_interface(integer dev_hdl, integer bInterface)
 runs on USB_CT {
 	var USB_result res;
 	var integer req_hdl := f_usb_get_req_hdl();
+	g_USB_Tguard.start;
 	USB.send(ts_USB_claim_interface(dev_hdl, bInterface, req_hdl));
 	USB.receive(USB_result:{req_hdl, dev_hdl, ?}) -> value res { log("Received ", res); }
+	g_USB_Tguard.stop;
 }
 
 /* Send a USB Device Request and wait for its completion to arrive */
@@ -91,12 +97,14 @@ runs on USB_CT return USB_transfer_compl
 	var USB_transfer_compl tc;
 	var integer req_hdl := f_usb_get_req_hdl();
 	USB.send(ts_UsbXfer_DevReq(req, g_dev_hdl, req_hdl));
+	g_USB_Tguard.start;
 	alt {
 	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc { }
 	[] USB.receive {
 		testcase.stop("Received unexpected primitive from USB");
 		}
 	}
+	g_USB_Tguard.stop;
 	return tc;
 }
 
@@ -119,9 +127,11 @@ runs on USB_CT return octetstring
 	var USB_transfer_compl tc;
 	var integer req_hdl := f_usb_get_req_hdl();
 	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_DESCRIPTOR(dtype, idx, len), g_dev_hdl, req_hdl));
+	g_USB_Tguard.start;
 	alt {
 	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
 		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		g_USB_Tguard.stop;
 		return raw_desc;
 		}
 	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc{
@@ -192,9 +202,11 @@ runs on USB_CT return integer {
 	var USB_transfer_compl tc;
 	var integer req_hdl := f_usb_get_req_hdl();
 	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_CONFIGURATION, g_dev_hdl, req_hdl));
+	g_USB_Tguard.start;
 	alt {
 	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
 		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		g_USB_Tguard.stop;
 		return oct2int(raw_desc[0]);
 		}
 	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc{
@@ -209,9 +221,11 @@ runs on USB_CT return integer {
 	var USB_transfer_compl tc;
 	var integer req_hdl := f_usb_get_req_hdl();
 	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_INTERFACE(intf), g_dev_hdl, req_hdl));
+	g_USB_Tguard.start;
 	alt {
 	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
 		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		g_USB_Tguard.stop;
 		return oct2int(raw_desc[0]);
 		}
 	[] USB.receive(tr_UsbXfer_compl(0, ?, ?, g_dev_hdl, req_hdl)) -> value tc{
@@ -227,9 +241,11 @@ runs on USB_CT return integer
 	var USB_transfer_compl tc;
 	var integer req_hdl := f_usb_get_req_hdl();
 	USB.send(ts_UsbXfer_DevReq(ts_DevReq_GET_STATUS(recipient, wIndex), g_dev_hdl, req_hdl));
+	g_USB_Tguard.start;
 	alt {
 	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, USB_TRANSFER_COMPLETED, g_dev_hdl, req_hdl)) -> value tc {
 		var octetstring raw_desc := substr(tc.data, 8, lengthof(tc.data)-8);
+		g_USB_Tguard.stop;
 		return oct2int(raw_desc);
 		}
 	[] USB.receive(tr_UsbXfer_compl(0, USB_TRANSFER_TYPE_CONTROL, ?, g_dev_hdl, req_hdl)) -> value tc{
