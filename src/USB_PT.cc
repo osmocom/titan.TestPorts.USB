@@ -102,7 +102,7 @@ USB_Interface::~USB_Interface()
 USB_Device::USB_Device(USB__PT_PROVIDER *port, libusb_device_handle *handle, unsigned int id)
 	: mPort(port), mHandle(handle), mID(id)
 {
-	log(TTCN_WARNING, "creating");
+	log(TTCN_DEBUG, "creating");
 }
 
 USB_Device::USB_Device(const USB_Device &in)
@@ -110,12 +110,12 @@ USB_Device::USB_Device(const USB_Device &in)
 	this->mPort = in.mPort;
 	this->mHandle = in.mHandle;
 	this->mID = in.mID;
-	log(TTCN_WARNING, "copying from %p", &in);
+	log(TTCN_DEBUG, "copying from %p", &in);
 }
 
 USB_Device::~USB_Device()
 {
-	log(TTCN_WARNING, "destroying");
+	log(TTCN_DEBUG, "destroying");
 
 	/* iterate over map of interfaces: destroy the USB_Interface objects in it; clear map */
 	std::map<unsigned int,USB_Interface *>::iterator it;
@@ -186,7 +186,7 @@ void USB_Transfer::init(const USB_Device *dev, unsigned int id, struct libusb_tr
 	mDev = dev;
 	mID = id;
 	mXfer = lx;
-	log("transfer created\n");
+	log(TTCN_DEBUG, "transfer created\n");
 }
 
 void USB_Transfer::submit()
@@ -198,19 +198,19 @@ void USB_Transfer::submit()
 		TTCN_error("Error during libusb_submit_transfer(): %s",
 			   libusb_strerror((libusb_error) rc));
 	}
-	log("transfer submitted\n");
+	log(TTCN_DEBUG, "transfer submitted (len=%d)\n", mXfer->length);
 }
 
 void USB_Transfer::complete()
 {
-	log("transfer completed\n");
+	log(TTCN_DEBUG, "transfer completed (len=%d)\n", mXfer->length);
 	/* report back to TTCN-3 port user */
 	mDev->mPort->transfer_completed(this);
 }
 
-void USB_Transfer::log(const char *fmt, ...)
+void USB_Transfer::log(TTCN_Logger::Severity msg_severity, const char *fmt, ...)
 {
-	TTCN_Logger::begin_event(TTCN_WARNING);
+	TTCN_Logger::begin_event(msg_severity);
 	TTCN_Logger::log_event("USB Test port (%s): T %p ", mDev->mPort->get_name(), this);
 	va_list args;
 	va_start(args, fmt);
@@ -228,7 +228,7 @@ USB_Transfer::~USB_Transfer()
 		mXfer->buffer = NULL;
 	}
 	libusb_free_transfer(mXfer);
-	log("transfer destroyed\n");
+	log(TTCN_DEBUG, "transfer destroyed\n");
 }
 
 
@@ -247,9 +247,9 @@ USB__PT_PROVIDER::~USB__PT_PROVIDER()
 {
 }
 
-void USB__PT_PROVIDER::log(const char *fmt, ...)
+void USB__PT_PROVIDER::log(TTCN_Logger::Severity msg_severity, const char *fmt, ...)
 {
-	TTCN_Logger::begin_event(TTCN_WARNING);
+	TTCN_Logger::begin_event(msg_severity);
 	TTCN_Logger::log_event("USB Test port (%s): ", get_name());
 	va_list args;
 	va_start(args, fmt);
@@ -333,7 +333,7 @@ void USB__PT_PROVIDER::outgoing_send(const USB__open__vid__pid& send_par)
 	libusb_device_handle *dh;
 	dh = libusb_open_device_with_vid_pid(mCtx, vendor_id, product_id);
 	if (!dh) {
-		log("Error opening VID/PID %04x:%04x", vendor_id, product_id);
+		log(TTCN_ERROR, "Error opening VID/PID %04x:%04x", vendor_id, product_id);
 		rc = -1;
 	} else {
 		USB_Device *dev = new USB_Device(this, dh, device_hdl);
@@ -364,7 +364,7 @@ void USB__PT_PROVIDER::outgoing_send(const USB__open__path& send_par)
 
 	rc = libusb_get_device_list(mCtx, &list);
 	if (rc < 0) {
-		log("Error getting USB device list: %s\n",
+		log(TTCN_ERROR, "Error getting USB device list: %s\n",
 		    libusb_strerror((enum libusb_error) rc));
 		rc = -1;
 		goto out;
@@ -376,17 +376,17 @@ void USB__PT_PROVIDER::outgoing_send(const USB__open__path& send_par)
 		libusb_device *dev = list[i];
 		rc = libusb_get_port_numbers(dev, ports, sizeof(ports));
 		stringify_usb_path(path, libusb_get_bus_number(dev), ports, rc);
-		log("Found USB Device at path %s", path);
+		log(TTCN_DEBUG, "Found USB Device at path %s", path);
 		if (!strcmp(in_path, path)) {
 			rc = libusb_open(dev, &dh);
 			if (rc < 0) {
-				log("Error opening USB device %s: %s", path,
+				log(TTCN_ERROR, "Error opening USB device %s: %s", path,
 				    libusb_strerror((enum libusb_error) rc));
 				rc = -1;
 			} else {
 				USB_Device *udev = new USB_Device(this, dh, device_hdl);
 				mDevices.insert(std::make_pair(device_hdl, udev));
-				log("Successfully opened USB device at path %s", path);
+				log(TTCN_PORTEVENT, "Successfully opened USB device at path %s", path);
 				rc = 0;
 			}
 			break;
@@ -394,7 +394,7 @@ void USB__PT_PROVIDER::outgoing_send(const USB__open__path& send_par)
 	}
 
 	if (!dh) {
-		log("No matching USB device for %s", in_path);
+		log(TTCN_ERROR, "No matching USB device for %s", in_path);
 		rc = -1;
 	}
 	libusb_free_device_list(list, 1);
@@ -411,7 +411,7 @@ void USB__PT_PROVIDER::outgoing_send(const USB__set__configuration& send_par)
 
 	rc = libusb_set_configuration(dev->mHandle, send_par.configuration());
 	if (rc != 0)
-		log("Cannot set configuration %d", (int)send_par.configuration());
+		log(TTCN_ERROR, "Cannot set configuration %d", (int)send_par.configuration());
 	incoming_message(USB__result(send_par.req__hdl(), send_par.device__hdl(), rc));
 }
 
@@ -424,7 +424,7 @@ void USB__PT_PROVIDER::outgoing_send(const USB__claim__interface& send_par)
 
 	rc = libusb_claim_interface(dev->mHandle, interface_nr);
 	if (rc != 0)
-		log("Cannot claim USB interface %d\n", interface_nr);
+		log(TTCN_ERROR, "Cannot claim USB interface %d\n", interface_nr);
 	else {
 		USB_Interface *intf = new USB_Interface(*dev, interface_nr);
 		dev->mInterfaces.insert(std::make_pair(interface_nr, intf));
@@ -440,7 +440,7 @@ void USB__PT_PROVIDER::outgoing_send(const USB__release__interface& send_par)
 
 	rc = libusb_release_interface(dev->mHandle, interface_nr);
 	if (rc != 0)
-		log("Cannot release USB interface %d\n", interface_nr);
+		log(TTCN_ERROR, "Cannot release USB interface %d\n", interface_nr);
 	else
 		dev->mInterfaces.erase(interface_nr);
 	incoming_message(USB__result(send_par.req__hdl(), send_par.device__hdl(), rc));

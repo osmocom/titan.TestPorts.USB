@@ -62,7 +62,7 @@ public:
 	~USB_Transfer();
 	void submit();
 	void complete();
-	void log(const char *fmt, ...);
+	void log(TTCN_Logger::Severity msg_severity, const char *fmt, ...);
 
 	/* the USB device through which the transfer is sent */
 	const USB_Device *mDev;
@@ -110,7 +110,7 @@ protected:
 	virtual void incoming_message(const USB__descriptor& incoming_par) = 0;
 
 public:
-	void log(const char *fmt, ...);
+	void log(TTCN_Logger::Severity msg_severity, const char *fmt, ...);
 	USB_Device *usbdev_by_hdl(unsigned int hdl);
 	void transfer_completed(USB_Transfer *t);
 private:
