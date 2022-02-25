@@ -82,7 +82,7 @@ function main(CCID_Emulation_Params pars) runs on CCID_Emulation_CT {
 
 	f_usb_init(g_pars.usb_dev_match);
 
-	log(f_usb_get_desc_tree());
+	f_usb_set_configuration(g_dev_hdl, 1);
 
 	var integer i_config := f_usb_get_config();
 	var USB_Descriptor_Node root;
