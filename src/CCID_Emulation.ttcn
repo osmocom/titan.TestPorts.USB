@@ -151,7 +151,9 @@ function main(CCID_Emulation_Params pars) runs on CCID_Emulation_CT {
 		f_usb_submit_xfer(g_ep_in);
 		/* forward to slot-specific port */
 		ccid_in := dec_CCID_PDU(tc.data);
+		if (SLOT[ccid_in.hdr.bSlot].checkstate("Connected")) {
 		SLOT[ccid_in.hdr.bSlot].send(ccid_in);
+		}
 		}
 	[] USB.receive(tr_UsbXfer_compl(g_ep_irq, USB_TRANSFER_TYPE_INTERRUPT,
 					     USB_TRANSFER_COMPLETED, g_dev_hdl, ?)) -> value tc {
