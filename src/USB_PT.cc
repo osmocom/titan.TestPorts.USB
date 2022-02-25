@@ -432,6 +432,17 @@ void USB__PT_PROVIDER::outgoing_send(const USB__claim__interface& send_par)
 	incoming_message(USB__result(send_par.req__hdl(), send_par.device__hdl(), rc));
 }
 
+void USB__PT_PROVIDER::outgoing_send(const USB__reset__device& send_par)
+{
+	USB_Device *dev = usbdev_by_hdl(send_par.device__hdl());
+	int rc;
+
+	rc = libusb_reset_device(dev->mHandle);
+	if (rc != 0)
+		log(TTCN_ERROR, "Cannot reset USB dev! \n");
+
+	incoming_message(USB__result(send_par.req__hdl(), send_par.device__hdl(), rc));
+}
 void USB__PT_PROVIDER::outgoing_send(const USB__release__interface& send_par)
 {
 	USB_Device *dev = usbdev_by_hdl(send_par.device__hdl());

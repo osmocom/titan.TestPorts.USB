@@ -130,6 +130,11 @@ module USB_PortTypes {
 		octetstring data
 	};
 
+	type record USB_reset_device {
+		integer req_hdl,
+		integer device_hdl
+	};
+	/* Response: USB_result */
 
 template (value) USB_open_vid_pid
 ts_USB_open_vid_pid(USB_vendor_id vid, USB_product_id pid, integer device_hdl := -1,
@@ -187,6 +192,21 @@ ts_USB_get_config_descriptor_by_value(integer device_hdl, integer cfg_val, integ
 	req_hdl := req_hdl,
 	device_hdl := device_hdl,
 	config_value := cfg_val
+}
+
+template (value) USB_set_configuration
+ts_USB_set_configuration(integer device_hdl, integer config_num := 1, integer req_hdl := -1) :=
+{
+	req_hdl := req_hdl,
+	device_hdl := device_hdl,
+	configuration := config_num
+}
+
+template (value) USB_reset_device
+ts_USB_reset_device(integer device_hdl, integer req_hdl := -1) :=
+{
+	req_hdl := req_hdl,
+	device_hdl := device_hdl
 }
 
 template USB_descriptor

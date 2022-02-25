@@ -119,6 +119,25 @@ runs on USB_CT {
 	g_USB_Tguard.stop;
 }
 
+function f_usb_set_configuration(integer dev_hdl, integer bConfigurationValue)
+runs on USB_CT {
+	var USB_result res;
+	var integer req_hdl := f_usb_get_req_hdl();
+	g_USB_Tguard.start;
+	USB.send(ts_USB_set_configuration(dev_hdl, bConfigurationValue, req_hdl));
+	USB.receive(USB_result:{req_hdl, dev_hdl, ?}) -> value res { log("Received ", res); }
+	g_USB_Tguard.stop;
+}
+
+function f_usb_reset_device()
+runs on USB_CT {
+	var USB_result res;
+	var integer req_hdl := f_usb_get_req_hdl();
+	g_USB_Tguard.start;
+	USB.send(ts_USB_reset_device(g_dev_hdl, req_hdl));
+	USB.receive(USB_result:{req_hdl, g_dev_hdl, ?}) -> value res { log("Received USB reset response", res); }
+	g_USB_Tguard.stop;
+}
 /* Send a USB Device Request and wait for its completion to arrive */
 function f_usb_dev_req(template (value) USB_DeviceRequest req)
 runs on USB_CT return USB_transfer_compl
